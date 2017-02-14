@@ -325,8 +325,7 @@ var ncpu_once sync.Once
 func make_config(t *testing.T, tag string, n int, unreliable bool, maxraftstate int) *config {
 	ncpu_once.Do(func() {
 		if runtime.NumCPU() < 2 {
-			fmt.Printf("warning: only one CPU, which may conceal locking bugs\n",
-				runtime.NumCPU())
+			fmt.Printf("warning: only one CPU, which may conceal locking bugs\n")
 		}
 	})
 	runtime.GOMAXPROCS(4)
