@@ -11,6 +11,7 @@ import "encoding/base64"
 import "sync"
 import "runtime"
 import "raft"
+import "fmt"
 
 func randstring(n int) string {
 	b := make([]byte, 2*n)
@@ -319,7 +320,15 @@ func (cfg *config) make_partition() ([]int, []int) {
 	return p1, p2
 }
 
+var ncpu_once sync.Once
+
 func make_config(t *testing.T, tag string, n int, unreliable bool, maxraftstate int) *config {
+	ncpu_once.Do(func() {
+		if runtime.NumCPU() < 2 {
+			fmt.Printf("warning: only one CPU, which may conceal locking bugs\n",
+				runtime.NumCPU())
+		}
+	})
 	runtime.GOMAXPROCS(4)
 	cfg := &config{}
 	cfg.t = t
