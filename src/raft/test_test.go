@@ -29,7 +29,7 @@ func TestInitialElection2A(t *testing.T) {
 	// is a leader elected?
 	cfg.checkOneLeader()
 
-	// does the leader+term stay the same there is no failure?
+	// does the leader+term stay the same if there is no network failure?
 	term1 := cfg.checkTerms()
 	time.Sleep(2 * RaftElectionTimeout)
 	term2 := cfg.checkTerms()
@@ -104,22 +104,22 @@ func TestFailAgree2B(t *testing.T) {
 	cfg := make_config(t, servers, false)
 	defer cfg.cleanup()
 
-	fmt.Printf("Test (2B): agreement despite follower failure ...\n")
+	fmt.Printf("Test (2B): agreement despite follower disconnection ...\n")
 
 	cfg.one(101, servers)
 
-	// follower network failure
+	// follower network disconnection
 	leader := cfg.checkOneLeader()
 	cfg.disconnect((leader + 1) % servers)
 
-	// agree despite one failed server?
+	// agree despite one disconnected server?
 	cfg.one(102, servers-1)
 	cfg.one(103, servers-1)
 	time.Sleep(RaftElectionTimeout)
 	cfg.one(104, servers-1)
 	cfg.one(105, servers-1)
 
-	// failed server re-connected
+	// re-connect
 	cfg.connect((leader + 1) % servers)
 
 	// agree with full set of servers?
@@ -135,7 +135,7 @@ func TestFailNoAgree2B(t *testing.T) {
 	cfg := make_config(t, servers, false)
 	defer cfg.cleanup()
 
-	fmt.Printf("Test (2B): no agreement if too many followers fail ...\n")
+	fmt.Printf("Test (2B): no agreement if too many followers disconnect ...\n")
 
 	cfg.one(10, servers)
 
@@ -160,7 +160,7 @@ func TestFailNoAgree2B(t *testing.T) {
 		t.Fatalf("%v committed but no majority", n)
 	}
 
-	// repair failures
+	// repair
 	cfg.connect((leader + 1) % servers)
 	cfg.connect((leader + 2) % servers)
 	cfg.connect((leader + 3) % servers)
