@@ -67,6 +67,18 @@ func (cfg *config) LogSize() int {
 	return logsize
 }
 
+// Maximum snapshot size across all servers
+func (cfg *config) SnapshotSize() int {
+	snapshotsize := 0
+	for i := 0; i < cfg.n; i++ {
+		n := cfg.saved[i].SnapshotSize()
+		if n > snapshotsize {
+			snapshotsize = n
+		}
+	}
+	return snapshotsize
+}
+
 // attach server i to servers listed in to
 // caller must hold cfg.mu
 func (cfg *config) connectUnlocked(i int, to []int) {

@@ -59,3 +59,9 @@ func (ps *Persister) ReadSnapshot() []byte {
 	defer ps.mu.Unlock()
 	return ps.snapshot
 }
+
+func (ps *Persister) SnapshotSize() int {
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+	return len(ps.snapshot)
+}
