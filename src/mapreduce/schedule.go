@@ -38,18 +38,18 @@ func schedule(jobName string, mapFiles []string, nReduce int, phase jobPhase, re
 	var wg sync.WaitGroup
 	for i := 0; i < ntasks; i++ {
 		wg.Add(1)
-		go func() {
+		go func(taskNum int) {
 			defer wg.Done()
 			for {
 				worker := <-registerChan
 				var file string
 				switch phase {
 				case mapPhase:
-					file = mapFiles[i]
+					file = mapFiles[taskNum]
 				case reducePhase:
 					file = ""
 				}
-				task := &DoTaskArgs{jobName, file, phase, i, n_other}
+				task := &DoTaskArgs{jobName, file, phase, taskNum, n_other}
 				ok := call(worker, "Worker.DoTask", task, new(struct{}))
 				if ok {
 					go func() {
@@ -60,7 +60,7 @@ func schedule(jobName string, mapFiles []string, nReduce int, phase jobPhase, re
 					debug("retry job %s, %d\n", phase, i)
 				}
 			}
-		}()
+		}(i)
 	}
 	wg.Wait()
 	fmt.Printf("Schedule: %v phase done\n", phase)
