@@ -16,6 +16,7 @@ MIT 6.824 课程2017年的学习资料
 - [Lec1: 入门介绍(以MapReduce为例)](https://github.com/chaozh/MIT-6.824-2017/issues/2)
 - [Lec2: RPC与线程机制(Go语言实战)](https://github.com/chaozh/MIT-6.824-2017/issues/3)
 - [Lec3: GFS](https://github.com/chaozh/MIT-6.824-2017/issues/6)
+- [Lec4：主从备份](https://github.com/chaozh/MIT-6.824-2017/issues/7)
 
 ## 问题 Questions
 
@@ -25,7 +26,10 @@ MIT 6.824 课程2017年的学习资料
 - [Lab0 完成Crawler与KV的Go语言实验](https://github.com/chaozh/MIT-6.824-2017/issues/4)
 - Lab1 MapReduce实验
 - [Lec3 请描述客户端从GFS读数据的大致流程？](https://github.com/chaozh/MIT-6.824-2017/issues/6)
+- [Lec4 论文中VM FT如何处理网络分区问题？](https://github.com/chaozh/MIT-6.824-2017/issues/7)
 
 ## 参考资料 Related
 
-- [MapReduce(2014)](https://pdos.csail.mit.edu/6.824/papers/mapreduce.pdf)
+- [MapReduce(2004)](https://pdos.csail.mit.edu/6.824/papers/mapreduce.pdf)
+- [GFS(2003)](https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/gfs-sosp2003.pdf)
+- [Fault-Tolerant Virtual Machines(2010)](https://pdos.csail.mit.edu/6.824/papers/vm-ft.pdf)
