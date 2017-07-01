@@ -16,8 +16,8 @@ MIT 6.824 课程2017年的学习资料
 - [Lec1: 入门介绍(以MapReduce为例)](https://github.com/chaozh/MIT-6.824-2017/issues/2)
 - [Lec2: RPC与线程机制(Go语言实战)](https://github.com/chaozh/MIT-6.824-2017/issues/3)
 - [Lec3: GFS](https://github.com/chaozh/MIT-6.824-2017/issues/6)
-- [Lec4：主从备份](https://github.com/chaozh/MIT-6.824-2017/issues/7)
-- [lec5：Raft](https://github.com/chaozh/MIT-6.824-2017/issues/9)
+- [Lec4: 主从备份](https://github.com/chaozh/MIT-6.824-2017/issues/7)
+- [Lec5: Raft](https://github.com/chaozh/MIT-6.824-2017/issues/9)
 
 ## 问题 Questions
 
