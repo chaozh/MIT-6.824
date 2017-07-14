@@ -17,7 +17,8 @@ MIT 6.824 课程2017年的学习资料
 - [Lec2: RPC与线程机制(Go语言实战)](https://github.com/chaozh/MIT-6.824-2017/issues/3)
 - [Lec3: GFS](https://github.com/chaozh/MIT-6.824-2017/issues/6)
 - [Lec4: 主从备份](https://github.com/chaozh/MIT-6.824-2017/issues/7)
-- [Lec5: Raft](https://github.com/chaozh/MIT-6.824-2017/issues/9)
+- [Lec5: Raft选主](https://github.com/chaozh/MIT-6.824-2017/issues/9)
+- [Lec6: Raft实现](https://github.com/chaozh/MIT-6.824-2017/issues/10)
 
 ## 问题 Questions
 
@@ -29,6 +30,7 @@ MIT 6.824 课程2017年的学习资料
 - [Lec3 请描述客户端从GFS读数据的大致流程？](https://github.com/chaozh/MIT-6.824-2017/issues/6)
 - [Lec4 论文中VM FT如何处理网络分区问题？](https://github.com/chaozh/MIT-6.824-2017/issues/7)
 - [Lec5 论文中节点能否被选为新leader？为什么？](https://github.com/chaozh/MIT-6.824-2017/issues/9)
+- [Lec6 论文中接收InstallSnapshot RPC消息能否导致状态机回退](https://github.com/chaozh/MIT-6.824-2017/issues/10)
 
 ## 参考资料 Related
 
