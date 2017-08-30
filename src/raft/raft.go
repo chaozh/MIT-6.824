@@ -154,9 +154,9 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 
+	reply.VoteGranted = false
 	if args.Term < rf.currentTerm {
 		reply.Term = rf.currentTerm
-		reply.VoteGranted = false
 		return
 	}
 
@@ -165,9 +165,13 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	}
 	reply.Term = rf.currentTerm
 
-	canVote := rf.votedFor == 0 || rf.votedFor == args.CandidateId
+	canVote := rf.votedFor == -1 || rf.votedFor == args.CandidateId
 	isLogUpToDate := args.LastLogTerm >= rf.lastLogTerm() && args.LastLogIndex >= rf.lastLogIndex()
-	reply.VoteGranted = canVote && isLogUpToDate
+	if canVote && isLogUpToDate {
+		reply.VoteGranted = true
+		rf.votedFor = args.CandidateId
+	}
+
 }
 
 type AppendEntriesArgs struct {
@@ -304,7 +308,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
 
 func (rf *Raft) startLoop() {
 	for {
-		time.Sleep(Tick)
+		time.Sleep(time.Millisecond * Tick)
 
 		rf.mu.Lock()
 		switch rf.state {
@@ -317,7 +321,6 @@ func (rf *Raft) startLoop() {
 		default:
 			rf.leaderTimeout -= Tick
 			if rf.leaderTimeout <= 0 {
-				rf.resetElectionTimeout()
 				rf.becomeCandidate()
 			}
 		}
@@ -334,10 +337,10 @@ func (rf *Raft) resetHeartBeat() {
 }
 
 func (rf *Raft) becomeFollower(term int) {
-	DPrintf("%v become follower", rf.me)
 	rf.state = Follower
 	rf.votedFor = -1
 	rf.currentTerm = term
+	DPrintf("%v, become follower term %v", rf.me, rf.currentTerm)
 	rf.resetElectionTimeout()
 }
 
@@ -346,7 +349,8 @@ func (rf *Raft) becomeCandidate() {
 	rf.currentTerm += 1
 	rf.votedFor = rf.me
 	rf.agreeCount = 1
-	DPrintf("%v become candidate %v", rf.me, rf.currentTerm)
+	rf.resetElectionTimeout()
+	DPrintf("%v, become candidate term %v", rf.me, rf.currentTerm)
 
 	args := RequestVoteArgs{
 		rf.currentTerm, rf.me,
@@ -366,7 +370,7 @@ func (rf *Raft) becomeCandidate() {
 			rf.becomeFollower(reply.Term)
 			return
 		}
-
+		DPrintf("%v, vote result term %v, state %v, grant %v", rf.me, rf.currentTerm, rf.state, reply.VoteGranted)
 		if rf.state == Candidate && reply.VoteGranted {
 			rf.agreeCount += 1
 			if rf.agreeCount >= majority(len(rf.peers)) {
@@ -383,8 +387,8 @@ func (rf *Raft) becomeCandidate() {
 }
 
 func (rf *Raft) becomeLeader() {
-	DPrintf("vote succ, %v become leader", rf.me)
 	rf.state = Leader
+	DPrintf("vote succ, %v become leader term %v", rf.me, rf.currentTerm)
 	rf.resetHeartBeat()
 	rf.sendHeartBeat()
 }
@@ -398,7 +402,11 @@ func (rf *Raft) sendHeartBeat() {
 
 	heartBeat := func(server int, args *AppendEntriesArgs) {
 		reply := AppendEntriesReply{}
-		rf.sendAppendEntries(server, args, &reply)
+		ok := rf.sendAppendEntries(server, args, &reply)
+
+		if !ok {
+			return
+		}
 
 		rf.mu.Lock()
 		defer rf.mu.Unlock()
