@@ -466,15 +466,19 @@ func (rf *Raft) sendAppendEntriesPeriod() {
 		}
 
 		if reply.Success {
-			rf.nextIndex[server] = args.PrevLogIndex + len(args.Entries) + 1
-			rf.matchIndex[server] = args.PrevLogIndex + len(args.Entries)
+			appendLogLen := len(args.Entries)
+			if appendLogLen == 0 {
+				return
+			}
+			rf.nextIndex[server] = args.PrevLogIndex + appendLogLen + 1
+			rf.matchIndex[server] = args.PrevLogIndex + appendLogLen
 
 			agreeCount := 1
 			for i := range rf.peers {
 				if i == rf.me {
 					continue
 				}
-				if rf.matchIndex[server] >= 0 && rf.matchIndex[i] >= rf.matchIndex[server] {
+				if rf.matchIndex[i] >= rf.matchIndex[server] {
 					agreeCount += 1
 				}
 			}
