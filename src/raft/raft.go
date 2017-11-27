@@ -181,6 +181,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	if canVote && isLogUpToDate {
 		reply.VoteGranted = true
 		rf.votedFor = args.CandidateId
+		rf.resetElectionTimeout()
 		isNeedPersist = true
 	}
 
@@ -221,13 +222,14 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 		reply.Success = false
 		rf.resetElectionTimeout()
 	} else {
-		i := 0
 		for index, log := range args.Entries {
-			i = args.PrevLogIndex + index + 1
+			i := args.PrevLogIndex + index + 1
 			if rf.lastLogIndex() >= i && rf.logs[i].Term != log.Term {
 				rf.logs = rf.logs[:i]
+				rf.logs = append(rf.logs, log)
+			} else if rf.lastLogIndex() < i {
+				rf.logs = append(rf.logs, log)
 			}
-			rf.logs = append(rf.logs, log)
 			isNeedPersist = true
 		}
 		if args.LeaderCommit > rf.commitIndex {
@@ -412,14 +414,7 @@ func (rf *Raft) becomeCandidate() {
 	rf.persist()
 	DPrintf("%v, become candidate term %v", rf.me, rf.currentTerm)
 
-	request := func(server int) {
-		rf.mu.Lock()
-		args := RequestVoteArgs{
-			rf.currentTerm, rf.me,
-			rf.lastLogIndex(), rf.lastLogTerm(),
-		}
-		rf.mu.Unlock()
-
+	request := func(server int, args RequestVoteArgs) {
 		reply := RequestVoteReply{}
 		ok := rf.sendRequestVote(server, &args, &reply)
 
@@ -429,11 +424,17 @@ func (rf *Raft) becomeCandidate() {
 
 		rf.mu.Lock()
 		defer rf.mu.Unlock()
+
+		if rf.currentTerm != args.Term {
+			return
+		}
+
 		if reply.Term > rf.currentTerm {
 			rf.becomeFollower(reply.Term)
 			rf.persist()
 			return
 		}
+
 		DPrintf("%v, vote result term %v, state %v, grant from %v %v", rf.me, rf.currentTerm, rf.state, server, reply.VoteGranted)
 		if rf.state == Candidate && reply.VoteGranted {
 			rf.agreeCount += 1
@@ -445,7 +446,11 @@ func (rf *Raft) becomeCandidate() {
 
 	for i := range rf.peers {
 		if i != rf.me {
-			go request(i)
+			args := RequestVoteArgs{
+				rf.currentTerm, rf.me,
+				rf.lastLogIndex(), rf.lastLogTerm(),
+			}
+			go request(i, args)
 		}
 	}
 }
@@ -464,27 +469,17 @@ func (rf *Raft) becomeLeader() {
 }
 
 func (rf *Raft) sendAppendEntriesPeriod() {
-	send := func(server int) {
-		rf.mu.Lock()
-		var args AppendEntriesArgs
-		args.Term = rf.currentTerm
-		args.LeaderId = rf.me
-		args.LeaderCommit = rf.commitIndex
-		args.PrevLogIndex = rf.nextIndex[server] - 1
-		if args.PrevLogIndex >= 0 {
-			args.PrevLogTerm = rf.logs[args.PrevLogIndex].Term
-			args.Entries = rf.logs[rf.nextIndex[server]:]
-		} else {
-			args.Entries = rf.logs
-		}
-		rf.mu.Unlock()
-
+	send := func(server int, args AppendEntriesArgs) {
 		reply := AppendEntriesReply{}
 		ok := rf.sendAppendEntries(server, &args, &reply)
 
 		rf.mu.Lock()
 		defer rf.mu.Unlock()
 		if !ok || rf.state != Leader {
+			return
+		}
+
+		if rf.currentTerm != args.Term {
 			return
 		}
 
@@ -496,24 +491,25 @@ func (rf *Raft) sendAppendEntriesPeriod() {
 
 		if reply.Success {
 			appendLogLen := len(args.Entries)
-			if appendLogLen == 0 {
-				return
-			}
-			rf.nextIndex[server] = args.PrevLogIndex + appendLogLen + 1
-			rf.matchIndex[server] = args.PrevLogIndex + appendLogLen
+			if appendLogLen != 0 {
+				rf.nextIndex[server] = args.PrevLogIndex + appendLogLen + 1
+				rf.matchIndex[server] = args.PrevLogIndex + appendLogLen
 
-			agreeCount := 1
-			for i := range rf.peers {
-				if i == rf.me {
-					continue
+				agreeCount := 1
+				for i := range rf.peers {
+					if i == rf.me {
+						continue
+					}
+					if rf.matchIndex[i] >= rf.matchIndex[server] {
+						agreeCount += 1
+					}
 				}
-				if rf.matchIndex[i] >= rf.matchIndex[server] {
-					agreeCount += 1
-				}
-			}
 
-			if agreeCount >= majority(len(rf.peers)) && rf.logs[rf.matchIndex[server]].Term == rf.currentTerm {
-				rf.commitIndex = rf.matchIndex[server]
+				if agreeCount >= majority(len(rf.peers)) &&
+					rf.commitIndex < rf.matchIndex[server] &&
+					rf.logs[rf.matchIndex[server]].Term == rf.currentTerm {
+					rf.commitIndex = rf.matchIndex[server]
+				}
 			}
 
 			if rf.commitIndex > rf.lastApplied {
@@ -526,7 +522,18 @@ func (rf *Raft) sendAppendEntriesPeriod() {
 
 	for i := range rf.peers {
 		if i != rf.me {
-			go send(i)
+			var args AppendEntriesArgs
+			args.Term = rf.currentTerm
+			args.LeaderId = rf.me
+			args.LeaderCommit = rf.commitIndex
+			args.PrevLogIndex = rf.nextIndex[i] - 1
+			if args.PrevLogIndex >= 0 {
+				args.PrevLogTerm = rf.logs[args.PrevLogIndex].Term
+			}
+			if rf.nextIndex[i] < len(rf.logs) {
+				args.Entries = rf.logs[rf.nextIndex[i]:]
+			}
+			go send(i, args)
 		}
 	}
 }
