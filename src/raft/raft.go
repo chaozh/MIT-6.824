@@ -531,11 +531,15 @@ func (rf *Raft) sendAppendEntriesPeriod() {
 			}
 		} else {
 			found := false
-			for i := len(rf.logs) - 1; i >= 0; i-- {
-				if rf.logs[i].Term == reply.ConflictTerm {
-					rf.nextIndex[server] = i
-					found = true
-					break
+			if reply.ConflictTerm != -1 &&
+				rf.lastLogIndex() > reply.ConflictIndex &&
+				rf.logs[reply.ConflictIndex].Term == reply.ConflictTerm {
+				for i := len(rf.logs) - 1; i >= 0; i-- {
+					if rf.logs[i].Term == reply.ConflictTerm {
+						rf.nextIndex[server] = i
+						found = true
+						break
+					}
 				}
 			}
 			if !found {
