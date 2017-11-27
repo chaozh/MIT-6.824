@@ -200,8 +200,10 @@ type AppendEntriesArgs struct {
 }
 
 type AppendEntriesReply struct {
-	Term    int
-	Success bool
+	Term          int
+	Success       bool
+	ConflictIndex int
+	ConflictTerm  int
 }
 
 func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) {
@@ -218,8 +220,20 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 
 	if args.Term < rf.currentTerm {
 		reply.Success = false
-	} else if args.PrevLogIndex > rf.lastLogIndex() || (args.PrevLogIndex >= 0 && rf.logs[args.PrevLogIndex].Term != args.PrevLogTerm) {
+	} else if args.PrevLogIndex > rf.lastLogIndex() {
 		reply.Success = false
+		reply.ConflictIndex = len(rf.logs)
+		reply.ConflictTerm = -1
+		rf.resetElectionTimeout()
+	} else if args.PrevLogIndex >= 0 && rf.logs[args.PrevLogIndex].Term != args.PrevLogTerm {
+		reply.Success = false
+		reply.ConflictTerm = rf.logs[args.PrevLogIndex].Term
+		for i, log := range rf.logs {
+			if log.Term == reply.ConflictTerm {
+				reply.ConflictIndex = i
+				break
+			}
+		}
 		rf.resetElectionTimeout()
 	} else {
 		for index, log := range args.Entries {
@@ -516,7 +530,17 @@ func (rf *Raft) sendAppendEntriesPeriod() {
 				go rf.applyLog()
 			}
 		} else {
-			rf.nextIndex[server] -= 1
+			found := false
+			for i := len(rf.logs) - 1; i >= 0; i-- {
+				if rf.logs[i].Term == reply.ConflictTerm {
+					rf.nextIndex[server] = i
+					found = true
+					break
+				}
+			}
+			if !found {
+				rf.nextIndex[server] = reply.ConflictIndex
+			}
 		}
 	}
 
