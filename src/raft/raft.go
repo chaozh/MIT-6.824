@@ -241,10 +241,11 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 			if rf.lastLogIndex() >= i && rf.logs[i].Term != log.Term {
 				rf.logs = rf.logs[:i]
 				rf.logs = append(rf.logs, log)
+				isNeedPersist = true
 			} else if rf.lastLogIndex() < i {
 				rf.logs = append(rf.logs, log)
+				isNeedPersist = true
 			}
-			isNeedPersist = true
 		}
 		if args.LeaderCommit > rf.commitIndex {
 			if args.LeaderCommit < rf.lastLogIndex() {
