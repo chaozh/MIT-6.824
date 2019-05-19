@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"mapreduce"
 	"os"
+	"strings"
 )
 
 //
@@ -15,6 +16,22 @@ import (
 //
 func mapF(filename string, contents string) []mapreduce.KeyValue {
 	// TODO: you have to write this function
+	contents = strings.ToUpper(contents)
+	var kvs []mapreduce.KeyValue
+	var word string
+	for _, c := range contents {
+		if c < 'A' || c > 'Z' {
+			kv := mapreduce.KeyValue{
+				Key:   word,
+				Value: "1",
+			}
+			kvs = append(kvs, kv)
+			word = ""
+		} else {
+			word += string(c)
+		}
+	}
+	return kvs
 }
 
 //
@@ -24,6 +41,7 @@ func mapF(filename string, contents string) []mapreduce.KeyValue {
 //
 func reduceF(key string, values []string) string {
 	// TODO: you also have to write this function
+	return fmt.Sprintf("%d", len(values))
 }
 
 // Can be run in 3 ways:
