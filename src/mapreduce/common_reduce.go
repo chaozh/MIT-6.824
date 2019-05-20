@@ -40,7 +40,9 @@ func doReduce(
 			}
 			kvs = append(kvs, kv)
 		}
+		mfh.Close()
 	}
+
 	sort.Slice(kvs, func(i, j int) bool {
 		return kvs[i].Key > kvs[j].Key
 	})
@@ -50,6 +52,7 @@ func doReduce(
 		log.Println(err)
 		os.Exit(-1)
 	}
+	defer ofh.Close()
 	enc := json.NewEncoder(ofh)
 	var lastKey string
 	var values []string
@@ -64,9 +67,12 @@ func doReduce(
 				log.Println(err)
 				os.Exit(-1)
 			}
+			lastKey = ""
+		} else {
+			lastKey = kv.Key
+			values = append(values, kv.Value)
 		}
 	}
-	defer ofh.Close()
 	//
 	// You will need to write this function.
 	//
