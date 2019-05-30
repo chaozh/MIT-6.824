@@ -58,10 +58,12 @@ func doReduce(
 	var values []string
 	for _, kv := range kvs {
 		if kv.Key != lastKey && len(lastKey) != 0 {
+			log.Println("key", len(values))
 			keyValue := KeyValue{
 				Key:   lastKey,
 				Value: reduceF(lastKey, values),
 			}
+			values = values[0:0]
 			err := enc.Encode(keyValue)
 			if err != nil {
 				log.Println(err)
