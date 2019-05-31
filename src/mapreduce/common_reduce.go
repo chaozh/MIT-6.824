@@ -58,7 +58,6 @@ func doReduce(
 	var values []string
 	for _, kv := range kvs {
 		if kv.Key != lastKey && len(lastKey) != 0 {
-			log.Println("key", len(values))
 			keyValue := KeyValue{
 				Key:   lastKey,
 				Value: reduceF(lastKey, values),
@@ -69,7 +68,8 @@ func doReduce(
 				log.Println(err)
 				os.Exit(-1)
 			}
-			lastKey = ""
+			lastKey = kv.Key
+			values = append(values, kv.Value)
 		} else {
 			lastKey = kv.Key
 			values = append(values, kv.Value)
