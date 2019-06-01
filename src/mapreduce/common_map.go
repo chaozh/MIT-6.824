@@ -27,7 +27,7 @@ func doMap(
 
 	kvs := mapF(inFile, string(data))
 
-	files := make(map[string]*os.File)
+	fileMap := make(map[string]*os.File)
 	for r := 0; r < nReduce; r++ {
 		fileName := reduceName(jobName, mapTaskNumber, r)
 		fh, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
@@ -35,14 +35,14 @@ func doMap(
 			log.Println(err)
 			os.Exit(-1)
 		}
-		files[fileName] = fh
+		fileMap[fileName] = fh
 		defer fh.Close()
 	}
 
 	for _, kv := range kvs {
 		r := ihash(kv.Key) % nReduce
 		fileName := reduceName(jobName, mapTaskNumber, r)
-		fh := files[fileName]
+		fh := fileMap[fileName]
 		enc := json.NewEncoder(fh)
 		err = enc.Encode(kv)
 		if err != nil {

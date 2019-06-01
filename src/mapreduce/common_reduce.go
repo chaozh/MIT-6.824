@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"os"
-	"sort"
 )
 
 // doReduce manages one reduce task: it reads the intermediate
@@ -18,7 +17,7 @@ func doReduce(
 	nMap int, // the number of map tasks that were run ("M" in the paper)
 	reduceF func(key string, values []string) string,
 ) {
-	var kvs []KeyValue
+	kvMap := make(map[string][]string)
 	for m := 0; m < nMap; m++ {
 		fileName := reduceName(jobName, m, reduceTaskNumber)
 		mfh, err := os.Open(fileName)
@@ -38,41 +37,28 @@ func doReduce(
 			if err != nil {
 				break
 			}
-			kvs = append(kvs, kv)
+			kvMap[kv.Key] = append(kvMap[kv.Key], kv.Value)
 		}
 		mfh.Close()
 	}
 
-	sort.Slice(kvs, func(i, j int) bool {
-		return kvs[i].Key > kvs[j].Key
-	})
-
-	ofh, err := os.OpenFile(outFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 644)
+	ofh, err := os.Create(outFile)
 	if err != nil {
 		log.Println(err)
 		os.Exit(-1)
 	}
 	defer ofh.Close()
 	enc := json.NewEncoder(ofh)
-	var lastKey string
-	var values []string
-	for _, kv := range kvs {
-		if kv.Key != lastKey && len(lastKey) != 0 {
-			keyValue := KeyValue{
-				Key:   lastKey,
-				Value: reduceF(lastKey, values),
-			}
-			values = values[0:0]
-			err := enc.Encode(keyValue)
-			if err != nil {
-				log.Println(err)
-				os.Exit(-1)
-			}
-			lastKey = kv.Key
-			values = append(values, kv.Value)
-		} else {
-			lastKey = kv.Key
-			values = append(values, kv.Value)
+	for k, vs := range kvMap {
+		keyValue := KeyValue{
+			Key:   k,
+			Value: reduceF(k, vs),
+		}
+
+		err := enc.Encode(keyValue)
+		if err != nil {
+			log.Println(err)
+			os.Exit(-1)
 		}
 	}
 	//
