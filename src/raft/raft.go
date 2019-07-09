@@ -78,7 +78,8 @@ type Raft struct {
 	nextIndex  map[int]int
 	matchIndex map[int]int
 
-	lastHeartbeatTime time.Time
+	heartbeatDuration       time.Duration
+	electionTimeoutDuration time.Duration
 }
 
 // return currentTerm and whether this server
@@ -153,6 +154,8 @@ type RequestVoteReply struct {
 //
 func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	// Your code here (2A, 2B).
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
 	reply.Term = rf.currentTerm
 	reply.VoteGranted = false
 	if args.Term < rf.currentTerm {
@@ -171,10 +174,8 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 
 		reply.Term = rf.currentTerm
 		reply.VoteGranted = true
-		rf.mu.Lock()
 		rf.votedFor = args.CandidateID
 		rf.currentTerm = args.Term
-		rf.mu.Unlock()
 		return
 	}
 	return
@@ -243,13 +244,12 @@ type AppendEntriesReply struct {
 //
 func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) {
 	// Your code here (2A, 2B).
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
 	reply.Term = rf.currentTerm
 	reply.Success = true
 	if len(args.Entries) == 0 {
 		//heartbeat
-		rf.mu.Lock()
-		rf.lastHeartbeatTime = time.Now()
-		rf.mu.Unlock()
 		return
 	}
 	return
@@ -305,20 +305,44 @@ func (rf *Raft) Kill() {
 // for any long-running work.
 //
 
+//处理只需要执行一次的任务，封装复杂性
+
+type initOption struct {
+	Peers                   []*labrpc.ClientEnd
+	Me                      int
+	Persister               *Persister
+	HeartbeatDuration       time.Duration
+	ElectionTimeoutDuration time.Duration
+}
+
+func (rf *Raft) init(op *initOption) {
+
+	//整个过程中，客户端都是这些不会变化
+	rf.peers = op.Peers
+	rf.persister = op.Persister
+
+	//初始化一些变量以后会用到，默认为0的都不列出来了
+	rf.me = op.Me
+	rf.votedFor = -1
+	//raft节点启动的时候都是从节点
+	rf.status = RaftStatus_Follower
+	rf.nextIndex = make(map[int]int)
+	rf.matchIndex = make(map[int]int)
+	rf.heartbeatDuration = op.HeartbeatDuration
+	rf.electionTimeoutDuration = op.ElectionTimeoutDuration
+}
+
 func Make(peers []*labrpc.ClientEnd, me int,
 	persister *Persister, applyCh chan ApplyMsg) *Raft {
 	rf := &Raft{}
-	rf.peers = peers
-	rf.persister = persister
-
-	// Your initialization code here (2A, 2B, 2C).
-	rf.me = me
-	rf.votedFor = -1
-	//上来都初始化为跟随者
-	rf.status = RaftStatus_Follower
-	rf.currentTerm = 0
-	//初始化一下时间，其实也没什么必要
-	rf.lastHeartbeatTime = time.Now()
+	op := &initOption{
+		Peers:                   peers,
+		Me:                      me,
+		Persister:               persister,
+		HeartbeatDuration:       time.Millisecond * 100,
+		ElectionTimeoutDuration: time.Millisecond * 1000,
+	}
+	rf.init(op)
 
 	go func() {
 		heartDur := time.Millisecond * 100
