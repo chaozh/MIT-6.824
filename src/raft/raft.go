@@ -80,6 +80,8 @@ type Raft struct {
 
 	heartbeatDuration       time.Duration
 	electionTimeoutDuration time.Duration
+
+	lastHeartbeatTime time.Time
 }
 
 // return currentTerm and whether this server
@@ -154,11 +156,11 @@ type RequestVoteReply struct {
 //
 func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	// Your code here (2A, 2B).
-	rf.mu.Lock()
-	defer rf.mu.Unlock()
-	reply.Term = rf.currentTerm
+	rf.setLastHeartbeatTime(time.Now())
+	term := rf.getTerm()
+	reply.Term = term
 	reply.VoteGranted = false
-	if args.Term < rf.currentTerm {
+	if args.Term < term {
 		return
 	}
 	if rf.votedFor == -1 || rf.votedFor == args.CandidateID {
@@ -244,12 +246,11 @@ type AppendEntriesReply struct {
 //
 func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) {
 	// Your code here (2A, 2B).
-	rf.mu.Lock()
-	defer rf.mu.Unlock()
-	reply.Term = rf.currentTerm
+	reply.Term = rf.getTerm()
 	reply.Success = true
 	if len(args.Entries) == 0 {
-		//heartbeat
+		//heartbeat设置为当前时间
+		rf.setLastHeartbeatTime(time.Now())
 		return
 	}
 	return
@@ -330,6 +331,107 @@ func (rf *Raft) init(op *initOption) {
 	rf.matchIndex = make(map[int]int)
 	rf.heartbeatDuration = op.HeartbeatDuration
 	rf.electionTimeoutDuration = op.ElectionTimeoutDuration
+}
+
+func (rf *Raft) setLastHeartbeatTime(t time.Time) {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	rf.lastHeartbeatTime = t
+}
+
+func (rf *Raft) getLastHeartbeatTime() time.Time {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	return rf.lastHeartbeatTime
+}
+
+func (rf *Raft) getTerm() int {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	return rf.currentTerm
+}
+
+func (rf *Raft) setTerm(term int) {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	rf.currentTerm = term
+}
+
+func (rf *Raft) setElectionTimeoutDuration(dur time.Duration) {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	rf.electionTimeoutDuration = dur
+}
+
+func (rf *Raft) getElectionTimeoutDuration() time.Duration {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	return rf.electionTimeoutDuration
+}
+
+func (rf *Raft) becomeLeader() {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	rf.status = RaftStatus_Leader
+}
+
+func (rf *Raft) becomeCandidate() {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	rf.status = RaftStatus_Leader
+}
+
+func (rf *Raft) becomeFollower() {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	rf.status = RaftStatus_Leader
+}
+
+func (rf *Raft) getPeers() []*labrpc.ClientEnd {
+	return rf.peers
+}
+
+func (rf *Raft) getMe() int {
+	return rf.me
+}
+
+func (rf *Raft) voteFor(candidate int) {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	rf.votedFor = candidate
+}
+
+func (rf *Raft)
+
+func (rf *Raft) followerLoop() {
+	electionTimeoutDuration := rf.getElectionTimeoutDuration()
+	for range time.Tick(electionTimeoutDuration) {
+		lastHeartbeatTime := rf.getLastHeartbeatTime()
+		if time.Since(lastHeartbeatTime) > electionTimeoutDuration {
+			rf.becomeCandidate()
+			break
+		}
+	}
+}
+
+func (rf *Raft) candidateLoop() {
+	timer := time.NewTimer(0)
+	me := rf.getMe()
+	rf.voteFor(me)
+	for {
+		select {
+		case <-timer.C:
+			for member := range rf.getPeers() {
+				if member == me {
+					continue
+				}
+				args := &RequestVoteArgs{
+
+				}
+				rf.RequestVote()
+			}
+		}
+	}
 }
 
 func Make(peers []*labrpc.ClientEnd, me int,
