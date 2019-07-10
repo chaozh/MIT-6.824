@@ -18,6 +18,7 @@ package raft
 //
 
 import (
+	"context"
 	"labrpc"
 	"log"
 	"math/rand"
@@ -81,7 +82,8 @@ type Raft struct {
 	heartbeatDuration       time.Duration
 	electionTimeoutDuration time.Duration
 
-	lastHeartbeatTime time.Time
+	lastHeartbeatTime   time.Time
+	lastRequestVoteTime time.Time
 }
 
 // return currentTerm and whether this server
@@ -156,28 +158,18 @@ type RequestVoteReply struct {
 //
 func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	// Your code here (2A, 2B).
-	rf.setLastHeartbeatTime(time.Now())
 	term := rf.getTerm()
 	reply.Term = term
 	reply.VoteGranted = false
 	if args.Term < term {
 		return
 	}
-	if rf.votedFor == -1 || rf.votedFor == args.CandidateID {
-		thisLastLogIndex := len(rf.log) - 1
-		if args.LastLogIndex < thisLastLogIndex {
-			return
-		} else if args.LastLogIndex == thisLastLogIndex {
-			thisLastLog := rf.log[thisLastLogIndex]
-			if args.LastLogTerm < thisLastLog.Term {
-				return
-			}
-		}
-
-		reply.Term = rf.currentTerm
+	if rf.isVoteExpired() {
+		rf.setLastRequestVoteTime(time.Now())
+		rf.setVoteFor(args.CandidateID)
+		rf.setTerm(args.Term)
+		reply.Term = term
 		reply.VoteGranted = true
-		rf.votedFor = args.CandidateID
-		rf.currentTerm = args.Term
 		return
 	}
 	return
@@ -246,8 +238,11 @@ type AppendEntriesReply struct {
 //
 func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) {
 	// Your code here (2A, 2B).
-	reply.Term = rf.getTerm()
-	reply.Success = true
+	term := rf.getTerm()
+	if args.Term > term {
+		reply.Success = true
+	}
+
 	if len(args.Entries) == 0 {
 		//heartbeat设置为当前时间
 		rf.setLastHeartbeatTime(time.Now())
@@ -329,8 +324,20 @@ func (rf *Raft) init(op *initOption) {
 	rf.status = RaftStatus_Follower
 	rf.nextIndex = make(map[int]int)
 	rf.matchIndex = make(map[int]int)
-	rf.heartbeatDuration = op.HeartbeatDuration
-	rf.electionTimeoutDuration = op.ElectionTimeoutDuration
+	rf.setHeartbeatDuration(op.HeartbeatDuration)
+	rf.setElectionTimeoutDuration(op.ElectionTimeoutDuration)
+}
+
+func (rf *Raft) setHeartbeatDuration(dur time.Duration) {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	rf.heartbeatDuration = dur
+}
+
+func (rf *Raft) getHeartbeatDuration() time.Duration {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	return rf.heartbeatDuration
 }
 
 func (rf *Raft) setLastHeartbeatTime(t time.Time) {
@@ -345,6 +352,18 @@ func (rf *Raft) getLastHeartbeatTime() time.Time {
 	return rf.lastHeartbeatTime
 }
 
+func (rf *Raft) setLastRequestVoteTime(t time.Time) {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	rf.lastRequestVoteTime = t
+}
+
+func (rf *Raft) getLastRequestVoteTime() time.Time {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	return rf.lastRequestVoteTime
+}
+
 func (rf *Raft) getTerm() int {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
@@ -355,6 +374,19 @@ func (rf *Raft) setTerm(term int) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 	rf.currentTerm = term
+}
+
+func (rf *Raft) getLastLogIndex() int {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	return len(rf.log) - 1
+}
+
+func (rf *Raft) getLastLogTerm() int {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	lastLog := rf.log[len(rf.log)-1]
+	return lastLog.Term
 }
 
 func (rf *Raft) setElectionTimeoutDuration(dur time.Duration) {
@@ -378,7 +410,7 @@ func (rf *Raft) becomeLeader() {
 func (rf *Raft) becomeCandidate() {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
-	rf.status = RaftStatus_Leader
+	rf.status = RaftStatus_Candidate
 }
 
 func (rf *Raft) becomeFollower() {
@@ -395,41 +427,175 @@ func (rf *Raft) getMe() int {
 	return rf.me
 }
 
-func (rf *Raft) voteFor(candidate int) {
+func (rf *Raft) getVoteFor() int {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	return rf.votedFor
+}
+func (rf *Raft) setVoteFor(candidate int) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 	rf.votedFor = candidate
 }
 
-func (rf *Raft)
+func (rf *Raft) increaseTerm() {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	rf.currentTerm++
+}
+
+func (rf *Raft) isLeaderLost() bool {
+	lastHeartbeatTime := rf.getLastHeartbeatTime()
+	electionTimeoutDuration := rf.getElectionTimeoutDuration()
+	if time.Since(lastHeartbeatTime) > electionTimeoutDuration {
+		return true
+	}
+	return false
+}
+
+func (rf *Raft) isLeader() bool {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	return rf.status == RaftStatus_Leader
+}
+
+func (rf *Raft) isFollower() bool {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	return rf.status == RaftStatus_Follower
+}
+func (rf *Raft) isCandidate() bool {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	return rf.status == RaftStatus_Candidate
+}
+
+func (rf *Raft) isVoteExpired() bool {
+	lastRequestVoteTime := rf.getLastRequestVoteTime()
+	electionTimeoutDuration := rf.getElectionTimeoutDuration()
+	if time.Since(lastRequestVoteTime) > electionTimeoutDuration {
+		return true
+	}
+	return false
+}
 
 func (rf *Raft) followerLoop() {
+	if !rf.isFollower() {
+		return
+	}
 	electionTimeoutDuration := rf.getElectionTimeoutDuration()
 	for range time.Tick(electionTimeoutDuration) {
-		lastHeartbeatTime := rf.getLastHeartbeatTime()
-		if time.Since(lastHeartbeatTime) > electionTimeoutDuration {
-			rf.becomeCandidate()
-			break
+		log.Println(rf.getMe(), "follower", rf.getTerm())
+		if !rf.isFollower() {
+			return
+		}
+		if rf.isLeaderLost() {
+			//需要确认一下 是否已经投票过，投过了就不要参加竞选了
+			if rf.isVoteExpired() {
+				rf.becomeCandidate()
+				break
+			}
 		}
 	}
 }
 
 func (rf *Raft) candidateLoop() {
+	if !rf.isCandidate() {
+		return
+	}
 	timer := time.NewTimer(0)
 	me := rf.getMe()
-	rf.voteFor(me)
+	peers := rf.getPeers()
+	electionTimeoutDuration := rf.getElectionTimeoutDuration()
 	for {
+		log.Println(rf.getMe(), "candidate", rf.getTerm())
 		select {
 		case <-timer.C:
-			for member := range rf.getPeers() {
-				if member == me {
+			if !rf.isCandidate() {
+				return
+			}
+			rf.setVoteFor(me)
+			rf.setLastRequestVoteTime(time.Now())
+			if !rf.isLeaderLost() {
+				rf.becomeFollower()
+				break
+			}
+			rf.increaseTerm()
+			ch := make(chan *RequestVoteReply, len(peers)-1)
+			for server := range peers {
+				if server == me {
 					continue
 				}
-				args := &RequestVoteArgs{
-
-				}
-				rf.RequestVote()
+				go func(server int) {
+					//lastLogIndex := rf.getLastLogIndex()
+					//lastLogTerm := rf.getLastLogTerm()
+					term := rf.getTerm()
+					args := &RequestVoteArgs{
+						Term:         term,
+						CandidateID:  me,
+						//LastLogIndex: lastLogIndex,
+						//LastLogTerm:  lastLogTerm,
+					}
+					reply := &RequestVoteReply{}
+					rf.sendRequestVote(server, args, reply)
+					ch <- reply
+				}(server)
 			}
+			totalVoted := 1
+			for i := 0; i < len(peers)-1; i++ {
+				reply := <-ch
+				if reply.VoteGranted == true {
+					totalVoted++
+				}
+			}
+			if totalVoted > len(peers)/2 {
+				rf.becomeLeader()
+				return
+			}
+			//随机超时时间在1-2倍选举超时时间时间
+			r := rand.Intn(200)
+			timer.Reset(electionTimeoutDuration * time.Duration(r) / 100)
+		}
+	}
+}
+
+func (rf *Raft) leaderLoop() {
+	if !rf.isLeader() {
+		return
+	}
+	heartbeatDuration := rf.getHeartbeatDuration()
+	peers := rf.getPeers()
+	me := rf.getMe()
+	for range time.Tick(heartbeatDuration) {
+		log.Println(rf.getMe(), "leader", rf.getTerm())
+		if !rf.isLeader() {
+			return
+		}
+		var wg sync.WaitGroup
+		wg.Add(len(peers) - 1)
+		for server := range peers {
+			if server == me {
+				continue
+			}
+			go func(server int) {
+				ctx, _ := context.WithTimeout(context.Background(), heartbeatDuration)
+				ch := make(chan *AppendEntriesReply)
+				go func(server int) {
+					term := rf.getTerm()
+					args := &AppendEntriesArgs{
+						Term: term,
+					}
+					reply := &AppendEntriesReply{}
+					rf.sendAppendEntries(server, args, reply)
+					ch <- reply
+				}(server)
+				select {
+				case <-ch:
+					//log.Println(reply)
+				case <-ctx.Done():
+				}
+				wg.Done()
+			}(server)
 		}
 	}
 }
@@ -447,68 +613,11 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	rf.init(op)
 
 	go func() {
-		heartDur := time.Millisecond * 100
 		for {
-			if rf.status == RaftStatus_Leader {
-				time.Sleep(heartDur)
-				for server := range peers {
-					if server == me {
-						continue
-					}
-					go func(follower int) {
-						args := &AppendEntriesArgs{}
-						args.Term = rf.currentTerm
-						args.LeaderID = me
-						args.Entries = []RaftLog{}
-						args.LeaderCommit = rf.commitIndex
-
-						reply := &AppendEntriesReply{}
-						log.Printf("leader [%d] -> follower [%d], heartbeat request: term %d\n", me, follower, rf.currentTerm)
-						if !rf.sendAppendEntries(follower, args, reply) {
-							log.Printf("follower [%d] -> leader [%d], heart beat response timeout\n", follower, me)
-						}
-						log.Printf("follower [%d] -> leader [%d], heart beat response: term %d\n", follower, me, reply.Term)
-					}(server)
-				}
-			} else if rf.status == RaftStatus_Follower {
-				time.Sleep(heartDur * time.Duration(rand.Intn(5)))
-				if time.Since(rf.lastHeartbeatTime) > heartDur*4 {
-					rf.status = RaftStatus_Candidate
-				}
-			} else if rf.status == RaftStatus_Candidate {
-				voted := 1
-				for server := range peers {
-					if server == me {
-						continue
-					}
-					args := &RequestVoteArgs{}
-					args.Term = rf.currentTerm
-					args.CandidateID = me
-					if len(rf.log) > 0 {
-						thisLastLog := rf.log[len(rf.log)-1]
-						args.LastLogIndex = len(rf.log) - 1
-						args.LastLogTerm = thisLastLog.Term
-					}
-
-					reply := &RequestVoteReply{}
-					log.Printf("server [%d] -> server [%d], request vote request: term %d\n", me, server, rf.currentTerm)
-					if !rf.sendRequestVote(server, args, reply) {
-						log.Printf("server [%d] -> server [%d], request vote response timeout\n", me, server)
-					}
-					if reply.VoteGranted {
-						voted++
-					}
-					log.Printf("server [%d] -> server [%d], request vote response: term %d, success: %v\n", server, me, reply.Term, reply.VoteGranted)
-				}
-				if voted > len(peers)/2 {
-					rf.status = RaftStatus_Leader
-				} else {
-					rf.currentTerm++
-					time.Sleep(heartDur * time.Duration(rand.Intn(5)))
-				}
-			}
+			rf.leaderLoop()
+			rf.followerLoop()
+			rf.candidateLoop()
 		}
-
 	}()
 
 	// initialize from state persisted before a crash
