@@ -239,7 +239,10 @@ type AppendEntriesReply struct {
 func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) {
 	// Your code here (2A, 2B).
 	term := rf.getTerm()
+<<<<<<< HEAD
 	reply.Term = term
+=======
+>>>>>>> 61799bb08704c259bc1ffa7da07562bf125dd125
 	if args.Term > term {
 		reply.Success = true
 	}
@@ -516,12 +519,21 @@ func (rf *Raft) candidateLoop() {
 			if !rf.isCandidate() {
 				return
 			}
+<<<<<<< HEAD
 			if !rf.isLeaderLost() {
 				rf.becomeFollower()
 				return
 			}
 			rf.setVoteFor(me)
 			rf.setLastRequestVoteTime(time.Now())
+=======
+			rf.setVoteFor(me)
+			rf.setLastRequestVoteTime(time.Now())
+			if !rf.isLeaderLost() {
+				rf.becomeFollower()
+				break
+			}
+>>>>>>> 61799bb08704c259bc1ffa7da07562bf125dd125
 			rf.increaseTerm()
 			ch := make(chan *RequestVoteReply, len(peers)-1)
 			for server := range peers {
@@ -533,8 +545,13 @@ func (rf *Raft) candidateLoop() {
 					//lastLogTerm := rf.getLastLogTerm()
 					term := rf.getTerm()
 					args := &RequestVoteArgs{
+<<<<<<< HEAD
 						Term:        term,
 						CandidateID: me,
+=======
+						Term:         term,
+						CandidateID:  me,
+>>>>>>> 61799bb08704c259bc1ffa7da07562bf125dd125
 						//LastLogIndex: lastLogIndex,
 						//LastLogTerm:  lastLogTerm,
 					}
@@ -555,7 +572,11 @@ func (rf *Raft) candidateLoop() {
 				return
 			}
 			//随机超时时间在1-2倍选举超时时间时间
+<<<<<<< HEAD
 			r := rand.Intn(1000)
+=======
+			r := rand.Intn(200)
+>>>>>>> 61799bb08704c259bc1ffa7da07562bf125dd125
 			timer.Reset(electionTimeoutDuration * time.Duration(r) / 100)
 		}
 	}
