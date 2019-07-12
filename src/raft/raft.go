@@ -29,6 +29,10 @@ func init() {
 	log.SetFlags(log.Lshortfile | log.LstdFlags)
 }
 
+const (
+	UnitDuration = time.Millisecond * 5
+)
+
 // import "bytes"
 // import "encoding/gob"
 
@@ -84,6 +88,7 @@ type Raft struct {
 
 	heartbeatDuration       time.Duration
 	electionTimeoutDuration time.Duration
+	requestTimeoutDuration  time.Duration
 
 	lastHeartbeatTime   time.Time
 	lastRequestVoteTime time.Time
@@ -315,6 +320,7 @@ type initOption struct {
 	Persister               *Persister
 	HeartbeatDuration       time.Duration
 	ElectionTimeoutDuration time.Duration
+	RequestTimeoutDuration  time.Duration
 }
 
 func (rf *Raft) init(op *initOption) {
@@ -332,6 +338,7 @@ func (rf *Raft) init(op *initOption) {
 	rf.matchIndex = make(map[int]int)
 	rf.setHeartbeatDuration(op.HeartbeatDuration)
 	rf.setElectionTimeoutDuration(op.ElectionTimeoutDuration)
+	rf.setRequestTimeoutDuration(op.RequestTimeoutDuration)
 }
 
 func (rf *Raft) setHeartbeatDuration(dur time.Duration) {
@@ -344,6 +351,18 @@ func (rf *Raft) getHeartbeatDuration() time.Duration {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 	return rf.heartbeatDuration
+}
+
+func (rf *Raft) setRequestTimeoutDuration(dur time.Duration) {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	rf.requestTimeoutDuration = dur
+}
+
+func (rf *Raft) getRequestTimeoutDuration() time.Duration {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	return rf.requestTimeoutDuration
 }
 
 func (rf *Raft) setLastHeartbeatTime(t time.Time) {
@@ -511,6 +530,7 @@ func (rf *Raft) candidateLoop() {
 	}
 	r := rand.Intn(5)
 	electionTimeoutDuration := rf.getElectionTimeoutDuration()
+	requestTimeoutDuration := rf.getRequestTimeoutDuration()
 	timer := time.NewTimer(electionTimeoutDuration * time.Duration(r))
 	me := rf.getMe()
 	peers := rf.getPeers()
@@ -546,12 +566,29 @@ func (rf *Raft) candidateLoop() {
 						//LastLogIndex: lastLogIndex,
 						//LastLogTerm:  lastLogTerm,
 					}
-					reply := &RequestVoteReply{}
-					rf.sendRequestVote(server, args, reply)
-					if reply.VoteGranted {
-						log.Printf("candidate %d received %d vote\n", me, server)
+					sendRequestVote := func() <-chan *RequestVoteReply {
+						ch := make(chan *RequestVoteReply)
+						go func() {
+							reply := &RequestVoteReply{}
+							rf.sendRequestVote(server, args, reply)
+							if reply.VoteGranted {
+								log.Printf("candidate %d received %d vote\n", me, server)
+
+							}
+							ch <- reply
+						}()
+						return ch
 					}
-					ch <- reply
+					select {
+					case reply := <-sendRequestVote():
+						ch <- reply
+					case <-time.After(requestTimeoutDuration):
+						reply := &RequestVoteReply{
+							VoteGranted: false,
+						}
+						ch <- reply
+					}
+
 				}(server)
 			}
 			totalVoted := 1
@@ -559,6 +596,7 @@ func (rf *Raft) candidateLoop() {
 				reply := <-ch
 				if reply.VoteGranted == true {
 					totalVoted++
+					log.Printf("candidate %d received %d votes\n", me, totalVoted)
 				}
 			}
 			log.Printf("candidate %d received %d votes\n", me, totalVoted)
@@ -578,6 +616,7 @@ func (rf *Raft) leaderLoop() {
 		return
 	}
 	heartbeatDuration := rf.getHeartbeatDuration()
+	requestTimeoutDuration := rf.getRequestTimeoutDuration()
 	peers := rf.getPeers()
 	me := rf.getMe()
 	for range time.Tick(heartbeatDuration) {
@@ -602,12 +641,14 @@ func (rf *Raft) leaderLoop() {
 				reply := &AppendEntriesReply{}
 				sendHeartBeat := func() chan *AppendEntriesReply {
 					ch := make(chan *AppendEntriesReply)
-					rf.sendAppendEntries(server, args, reply)
-					ch <- reply
+					go func() {
+						rf.sendAppendEntries(server, args, reply)
+						ch <- reply
+					}()
 					return ch
 				}
 				select {
-				case <-time.After(2 * heartbeatDuration):
+				case <-time.After(requestTimeoutDuration):
 					reply := &AppendEntriesReply{}
 					reply.Success = false
 					ch <- reply
@@ -623,6 +664,7 @@ func (rf *Raft) leaderLoop() {
 				aliveFollower++
 			}
 		}
+		log.Printf("leader %d got %d support\n", me, aliveFollower)
 		if aliveFollower+1 <= len(peers)/2 {
 			log.Printf("leader %d lost trust, only %d support\n", me, aliveFollower)
 			rf.becomeFollower()
@@ -638,8 +680,9 @@ func Make(peers []*labrpc.ClientEnd, me int,
 		Peers:                   peers,
 		Me:                      me,
 		Persister:               persister,
-		HeartbeatDuration:       time.Millisecond * 50,
-		ElectionTimeoutDuration: time.Millisecond * 500,
+		HeartbeatDuration:       UnitDuration * 5,
+		ElectionTimeoutDuration: UnitDuration * 25,
+		RequestTimeoutDuration:  UnitDuration,
 	}
 	rf.init(op)
 
