@@ -30,7 +30,7 @@ func init() {
 }
 
 const (
-	UnitDuration = time.Millisecond * 5
+	UnitDuration = time.Millisecond * 20
 )
 
 // import "bytes"
@@ -88,10 +88,8 @@ type Raft struct {
 
 	heartbeatDuration       time.Duration
 	electionTimeoutDuration time.Duration
-	requestTimeoutDuration  time.Duration
 
-	lastHeartbeatTime   time.Time
-	lastRequestVoteTime time.Time
+	lastHeartbeatTime time.Time
 }
 
 // return currentTerm and whether this server
@@ -164,6 +162,10 @@ type RequestVoteReply struct {
 //
 // example RequestVote RPC handler.
 //
+/*
+	1. 如果term < currentTerm返回 false （5.2 节）
+    2. 如果 votedFor 为空或者为 candidateId，并且候选人的日志至少和自己一样新，那么就投票给他（5.2 节，5.4 节）
+*/
 func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	// Your code here (2A, 2B).
 	term := rf.getTerm()
@@ -171,12 +173,16 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	reply.VoteGranted = false
 	if args.Term < term {
 		return
-	}
-	if rf.isVoteExpired() {
-		rf.setLastRequestVoteTime(time.Now())
-		rf.setVoteFor(args.CandidateID)
+	} else if args.Term > term {
 		rf.setTerm(args.Term)
-		reply.Term = term
+		if rf.isLeader() {
+			log.Printf("leader: %d, term :%d found higher term, become follower\n", rf.getTerm(), args.Term)
+			rf.becomeFollower()
+			return
+		}
+	}
+	if rf.getVoteFor() == -1 {
+		rf.setVoteFor(args.CandidateID)
 		reply.VoteGranted = true
 		return
 	}
@@ -251,13 +257,19 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	if args.Term < term {
 		reply.Success = false
 		return
+	} else if args.Term > term {
+		rf.setTerm(args.Term)
+	}
+	if rf.isCandidate() {
+		//发现有领导了，那么就不要再去选举了
+		rf.becomeFollower()
+		log.Printf("candidate %d, term %d found new leader, term %d, become follower", rf.getMe(), term, args.Term)
 	}
 	reply.Success = true
 
 	if len(args.Entries) == 0 {
 		//heartbeat设置为当前时间
 		rf.setLastHeartbeatTime(time.Now())
-		return
 	}
 	return
 }
@@ -320,7 +332,6 @@ type initOption struct {
 	Persister               *Persister
 	HeartbeatDuration       time.Duration
 	ElectionTimeoutDuration time.Duration
-	RequestTimeoutDuration  time.Duration
 }
 
 func (rf *Raft) init(op *initOption) {
@@ -338,7 +349,6 @@ func (rf *Raft) init(op *initOption) {
 	rf.matchIndex = make(map[int]int)
 	rf.setHeartbeatDuration(op.HeartbeatDuration)
 	rf.setElectionTimeoutDuration(op.ElectionTimeoutDuration)
-	rf.setRequestTimeoutDuration(op.RequestTimeoutDuration)
 }
 
 func (rf *Raft) setHeartbeatDuration(dur time.Duration) {
@@ -353,18 +363,6 @@ func (rf *Raft) getHeartbeatDuration() time.Duration {
 	return rf.heartbeatDuration
 }
 
-func (rf *Raft) setRequestTimeoutDuration(dur time.Duration) {
-	rf.mu.Lock()
-	defer rf.mu.Unlock()
-	rf.requestTimeoutDuration = dur
-}
-
-func (rf *Raft) getRequestTimeoutDuration() time.Duration {
-	rf.mu.Lock()
-	defer rf.mu.Unlock()
-	return rf.requestTimeoutDuration
-}
-
 func (rf *Raft) setLastHeartbeatTime(t time.Time) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
@@ -377,18 +375,6 @@ func (rf *Raft) getLastHeartbeatTime() time.Time {
 	return rf.lastHeartbeatTime
 }
 
-func (rf *Raft) setLastRequestVoteTime(t time.Time) {
-	rf.mu.Lock()
-	defer rf.mu.Unlock()
-	rf.lastRequestVoteTime = t
-}
-
-func (rf *Raft) getLastRequestVoteTime() time.Time {
-	rf.mu.Lock()
-	defer rf.mu.Unlock()
-	return rf.lastRequestVoteTime
-}
-
 func (rf *Raft) getTerm() int {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
@@ -398,6 +384,8 @@ func (rf *Raft) getTerm() int {
 func (rf *Raft) setTerm(term int) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
+	//每一个term只会投票给一个人
+	rf.votedFor = -1
 	rf.currentTerm = term
 }
 
@@ -463,12 +451,6 @@ func (rf *Raft) setVoteFor(candidate int) {
 	rf.votedFor = candidate
 }
 
-func (rf *Raft) increaseTerm() {
-	rf.mu.Lock()
-	defer rf.mu.Unlock()
-	rf.currentTerm++
-}
-
 func (rf *Raft) isLeaderLost() bool {
 	lastHeartbeatTime := rf.getLastHeartbeatTime()
 	electionTimeoutDuration := rf.getElectionTimeoutDuration()
@@ -495,31 +477,20 @@ func (rf *Raft) isCandidate() bool {
 	return rf.status == RaftStatus_Candidate
 }
 
-func (rf *Raft) isVoteExpired() bool {
-	lastRequestVoteTime := rf.getLastRequestVoteTime()
-	electionTimeoutDuration := rf.getElectionTimeoutDuration()
-	if time.Since(lastRequestVoteTime) > electionTimeoutDuration {
-		return true
-	}
-	return false
-}
-
 func (rf *Raft) followerLoop() {
 	if !rf.isFollower() {
 		return
 	}
 	electionTimeoutDuration := rf.getElectionTimeoutDuration()
 	for range time.Tick(electionTimeoutDuration) {
-		log.Printf("follower: %d, term: %d\n", rf.getMe(), rf.getTerm())
+		log.Printf("follower %d, term %d\n", rf.getMe(), rf.getTerm())
 		if !rf.isFollower() {
 			return
 		}
 		if rf.isLeaderLost() {
-			//需要确认一下 是否已经投票过，投过了就不要参加竞选了
-			if rf.isVoteExpired() {
-				rf.becomeCandidate()
-				break
-			}
+			log.Printf("follower %d, term %d, think leader is lost, become candidate\n", rf.getMe(), rf.getTerm())
+			rf.becomeCandidate()
+			return
 		}
 	}
 }
@@ -530,7 +501,6 @@ func (rf *Raft) candidateLoop() {
 	}
 	r := rand.Intn(5)
 	electionTimeoutDuration := rf.getElectionTimeoutDuration()
-	requestTimeoutDuration := rf.getRequestTimeoutDuration()
 	timer := time.NewTimer(electionTimeoutDuration * time.Duration(r))
 	me := rf.getMe()
 	peers := rf.getPeers()
@@ -547,11 +517,11 @@ func (rf *Raft) candidateLoop() {
 			}
 			//给自己投票，记录一下投票时间，这个时间主要用来避免票投几家
 			rf.setVoteFor(me)
-			rf.setLastRequestVoteTime(time.Now())
 
-			rf.increaseTerm()
-			log.Printf("candidate: %d, term: %d\n", rf.getMe(), rf.getTerm())
+			rf.setTerm(rf.getTerm() + 1)
+			log.Printf("candidate %d, term %d\n", rf.getMe(), rf.getTerm())
 			ch := make(chan *RequestVoteReply, len(peers)-1)
+			term := rf.getTerm()
 			for server := range peers {
 				if server == me {
 					continue
@@ -559,36 +529,15 @@ func (rf *Raft) candidateLoop() {
 				go func(server int) {
 					//lastLogIndex := rf.getLastLogIndex()
 					//lastLogTerm := rf.getLastLogTerm()
-					term := rf.getTerm()
 					args := &RequestVoteArgs{
 						Term:        term,
 						CandidateID: me,
 						//LastLogIndex: lastLogIndex,
 						//LastLogTerm:  lastLogTerm,
 					}
-					sendRequestVote := func() <-chan *RequestVoteReply {
-						ch := make(chan *RequestVoteReply)
-						go func() {
-							reply := &RequestVoteReply{}
-							rf.sendRequestVote(server, args, reply)
-							if reply.VoteGranted {
-								log.Printf("candidate %d received %d vote\n", me, server)
-
-							}
-							ch <- reply
-						}()
-						return ch
-					}
-					select {
-					case reply := <-sendRequestVote():
-						ch <- reply
-					case <-time.After(requestTimeoutDuration):
-						reply := &RequestVoteReply{
-							VoteGranted: false,
-						}
-						ch <- reply
-					}
-
+					reply := &RequestVoteReply{}
+					rf.sendRequestVote(server, args, reply)
+					ch <- reply
 				}(server)
 			}
 			totalVoted := 1
@@ -596,11 +545,17 @@ func (rf *Raft) candidateLoop() {
 				reply := <-ch
 				if reply.VoteGranted == true {
 					totalVoted++
-					log.Printf("candidate %d received %d votes\n", me, totalVoted)
+				}
+				if reply.Term > term {
+					log.Printf("candidate %d term %d found higher term %d, become follower\n", me, term, reply.Term)
+					rf.setTerm(reply.Term)
+					rf.becomeFollower()
+					return
 				}
 			}
 			log.Printf("candidate %d received %d votes\n", me, totalVoted)
 			if totalVoted > len(peers)/2 {
+				log.Printf("candidate %d become leader, term %d\n", me, rf.getTerm())
 				rf.becomeLeader()
 				return
 			}
@@ -616,17 +571,17 @@ func (rf *Raft) leaderLoop() {
 		return
 	}
 	heartbeatDuration := rf.getHeartbeatDuration()
-	requestTimeoutDuration := rf.getRequestTimeoutDuration()
 	peers := rf.getPeers()
 	me := rf.getMe()
 	for range time.Tick(heartbeatDuration) {
-		log.Printf("leader: %d, term: %d\n", rf.getMe(), rf.getTerm())
+		log.Printf("leader %d, term %d\n", rf.getMe(), rf.getTerm())
 		if !rf.isLeader() {
 			return
 		}
 
 		//用来存储结果
 		ch := make(chan *AppendEntriesReply, len(peers)-1)
+		term := rf.getTerm()
 		for server := range peers {
 			if server == me {
 				continue
@@ -639,34 +594,24 @@ func (rf *Raft) leaderLoop() {
 					Term: term,
 				}
 				reply := &AppendEntriesReply{}
-				sendHeartBeat := func() chan *AppendEntriesReply {
-					ch := make(chan *AppendEntriesReply)
-					go func() {
-						rf.sendAppendEntries(server, args, reply)
-						ch <- reply
-					}()
-					return ch
-				}
-				select {
-				case <-time.After(requestTimeoutDuration):
-					reply := &AppendEntriesReply{}
-					reply.Success = false
-					ch <- reply
-				case reply := <-sendHeartBeat():
-					ch <- reply
-				}
+				rf.sendAppendEntries(server, args, reply)
+				ch <- reply
 			}(server)
 		}
-		aliveFollower := 0
+		aliveFollower := 1
 		for i := 0; i < len(peers)-1; i++ {
 			reply := <-ch
 			if reply.Success == true {
 				aliveFollower++
 			}
+			if reply.Term > term {
+				log.Printf("leader %d term %d found higher term %d, become follower\n", me, term, reply.Term)
+				rf.becomeFollower()
+				return
+			}
 		}
-		log.Printf("leader %d got %d support\n", me, aliveFollower)
-		if aliveFollower+1 <= len(peers)/2 {
-			log.Printf("leader %d lost trust, only %d support\n", me, aliveFollower)
+		if aliveFollower <= len(peers)/2 {
+			log.Printf("leader %d lost trust, only %d support, become follower\n", me, aliveFollower)
 			rf.becomeFollower()
 			return
 		}
@@ -680,9 +625,8 @@ func Make(peers []*labrpc.ClientEnd, me int,
 		Peers:                   peers,
 		Me:                      me,
 		Persister:               persister,
-		HeartbeatDuration:       UnitDuration * 5,
-		ElectionTimeoutDuration: UnitDuration * 25,
-		RequestTimeoutDuration:  UnitDuration,
+		HeartbeatDuration:       UnitDuration * 10,
+		ElectionTimeoutDuration: UnitDuration * 30,
 	}
 	rf.init(op)
 
