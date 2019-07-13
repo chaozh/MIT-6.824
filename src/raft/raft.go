@@ -30,7 +30,7 @@ func init() {
 }
 
 const (
-	UnitDuration = time.Millisecond * 20
+	UnitDuration = time.Millisecond * 2
 )
 
 // import "bytes"
@@ -260,10 +260,15 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	} else if args.Term > term {
 		rf.setTerm(args.Term)
 	}
-	if rf.isCandidate() {
-		//发现有领导了，那么就不要再去选举了
+	if !rf.isFollower() {
+		//发现有更新的领导了，那么就不要再去了当候选或者领导了
 		rf.becomeFollower()
-		log.Printf("candidate %d, term %d found new leader, term %d, become follower", rf.getMe(), term, args.Term)
+		if rf.isLeader() {
+			log.Printf("leader %d, term %d found new leader, term %d, become follower", rf.getMe(), term, args.Term)
+		}
+		if rf.isCandidate() {
+			log.Printf("candidate %d, term %d found new leader, term %d, become follower", rf.getMe(), term, args.Term)
+		}
 	}
 	reply.Success = true
 
@@ -512,6 +517,7 @@ func (rf *Raft) candidateLoop() {
 			}
 
 			if !rf.isLeaderLost() {
+				log.Printf("%d, term %d, think leader is back, become follower\n", rf.getMe(), rf.getTerm())
 				rf.becomeFollower()
 				break
 			}
@@ -574,10 +580,10 @@ func (rf *Raft) leaderLoop() {
 	peers := rf.getPeers()
 	me := rf.getMe()
 	for range time.Tick(heartbeatDuration) {
-		log.Printf("leader %d, term %d\n", rf.getMe(), rf.getTerm())
 		if !rf.isLeader() {
 			return
 		}
+		log.Printf("leader %d, term %d\n", rf.getMe(), rf.getTerm())
 
 		//用来存储结果
 		ch := make(chan *AppendEntriesReply, len(peers)-1)
@@ -605,14 +611,15 @@ func (rf *Raft) leaderLoop() {
 				aliveFollower++
 			}
 			if reply.Term > term {
-				log.Printf("leader %d term %d found higher term %d, become follower\n", me, term, reply.Term)
+				rf.setTerm(reply.Term)
 				rf.becomeFollower()
+				log.Printf("leader %d term %d found higher term %d, become follower\n", me, term, reply.Term)
 				return
 			}
 		}
 		if aliveFollower <= len(peers)/2 {
-			log.Printf("leader %d lost trust, only %d support, become follower\n", me, aliveFollower)
 			rf.becomeFollower()
+			log.Printf("leader %d lost trust, only %d support, become follower\n", me, aliveFollower)
 			return
 		}
 	}
