@@ -269,6 +269,9 @@ func (cfg *config) checkOneLeader() int {
 		time.Sleep(500 * time.Millisecond)
 		leaders := make(map[int][]int)
 		for i := 0; i < cfg.n; i++ {
+			term, _ := cfg.rafts[i].GetState()
+			rf := cfg.rafts[i]
+			cfg.t.Logf("server %d, term %d, is_leader: %v, connected: %v", i, term, rf.status, cfg.connected[i])
 			if cfg.connected[i] {
 				if t, leader := cfg.rafts[i].GetState(); leader {
 					leaders[t] = append(leaders[t], i)
@@ -317,6 +320,9 @@ func (cfg *config) checkTerms() int {
 // check that there's no leader
 func (cfg *config) checkNoLeader() {
 	for i := 0; i < cfg.n; i++ {
+		term, _ := cfg.rafts[i].GetState()
+		rf := cfg.rafts[i]
+		cfg.t.Logf("server %d, term %d, is_leader: %v, connected: %v", i, term, rf.status, cfg.connected[i])
 		if cfg.connected[i] {
 			_, is_leader := cfg.rafts[i].GetState()
 			if is_leader {

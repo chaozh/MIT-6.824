@@ -10,7 +10,6 @@ package raft
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 	"sync"
 	"sync/atomic"
@@ -21,6 +20,7 @@ import (
 // The tester generously allows solutions to complete elections in one second
 // (much more than the paper's range of timeouts).
 const RaftElectionTimeout = 1000 * time.Millisecond
+const TestNum = 100
 
 func TestInitialElection2A(t *testing.T) {
 	servers := 3
@@ -39,8 +39,7 @@ func TestInitialElection2A(t *testing.T) {
 	if term1 != term2 {
 		fmt.Printf("warning: term changed even though there were no failures")
 	}
-
-	fmt.Printf("  ... Passed\n")
+	fmt.Printf("... Passed\n")
 }
 
 func TestReElection2A(t *testing.T) {
@@ -53,41 +52,42 @@ func TestReElection2A(t *testing.T) {
 	leader1 := cfg.checkOneLeader()
 
 	// if the leader disconnects, a new one should be elected.
-	log.Printf("leader %d leave\n", leader1)
+	fmt.Printf("leader %d leave\n", leader1)
 	cfg.disconnect(leader1)
 	cfg.checkOneLeader()
-	log.Println("one leader")
+	fmt.Println("one leader")
 
 	// if the old leader rejoins, that shouldn't
 	// disturb the old leader.
 	cfg.connect(leader1)
-	log.Printf("leader %d back\n", leader1)
+
+	fmt.Printf("leader %d back\n", leader1)
 	leader2 := cfg.checkOneLeader()
-	log.Println("one leader")
+	fmt.Println("one leader")
 
 	// if there's no quorum, no leader should
 	// be elected.
 	cfg.disconnect(leader2)
 	cfg.disconnect((leader2 + 1) % servers)
-	log.Printf("leader %d leave\n", leader2)
-	log.Printf("leader %d leave\n", (leader2+1)%servers)
-	time.Sleep(10 * RaftElectionTimeout)
+	fmt.Printf("leader %d leave\n", leader2)
+	fmt.Printf("leader %d leave\n", (leader2+1)%servers)
+	time.Sleep(2 * RaftElectionTimeout)
 	cfg.checkNoLeader()
-	log.Println("no leader")
+	fmt.Println("no leader")
 
 	// if a quorum arises, it should elect a leader.
 	cfg.connect((leader2 + 1) % servers)
-	log.Printf("leader %d back\n", (leader2+1)%servers)
+	fmt.Printf("leader %d back\n", (leader2+1)%servers)
 	cfg.checkOneLeader()
-	log.Println("one leader")
+	fmt.Println("one leader")
 
 	// re-join of last node shouldn't prevent leader from existing.
 	cfg.connect(leader2)
-	log.Printf("leader %d back\n", leader2)
+	fmt.Printf("leader %d back\n", leader2)
 	cfg.checkOneLeader()
-	log.Println("one leader")
+	fmt.Println("one leader")
+	fmt.Printf("... Passed\n")
 
-	fmt.Printf("  ... Passed\n")
 }
 
 func TestBasicAgree2B(t *testing.T) {
