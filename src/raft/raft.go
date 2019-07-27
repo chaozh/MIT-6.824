@@ -170,7 +170,6 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	}
 
 	rf.setTerm(args.Term)
-
 	if rf.getVoteFor() != -1 {
 		return
 	}
@@ -188,10 +187,15 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	rf.resetElectionTime()
 
 	//如果是leader，收到比自己更新的日志的时候，让自己变成follower
-	if rf.isLeader() {
-		DPrintf("leader: %d, term :%d found higher term, become follower\n", rf.getTerm(), args.Term)
+	if !rf.isFollower() {
+		//发现有更新的领导了，那么就不要再去了当候选或者领导了
 		rf.becomeFollower()
-		return
+		if rf.isLeader() {
+			DPrintf("leader %d, term %d found new leader, term %d, become follower", rf.getMe(), term, args.Term)
+		}
+		if rf.isCandidate() {
+			DPrintf("candidate %d, term %d found new leader, term %d, become follower", rf.getMe(), term, args.Term)
+		}
 	}
 
 	reply.VoteGranted = true
@@ -289,12 +293,11 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 			DPrintf("candidate %d, term %d found new leader, term %d, become follower", rf.getMe(), term, args.Term)
 		}
 	}
-	reply.Success = true
 
+	if len(args.Entries) != 0 {
+	}
 	rf.resetElectionTime()
-	/*if len(args.Entries) == 0 {
-		//heartbeat设置为当前时间
-	}*/
+	reply.Success = true
 	return
 }
 
@@ -327,11 +330,10 @@ func (rf *Raft) sendAppendEntries(ctx context.Context, server int, args *AppendE
 // the leader.
 //
 func (rf *Raft) Start(command interface{}) (int, int, bool) {
-	index := -1
-	term := -1
-	isLeader := true
-
 	// Your code here (2B).
+	index := rf.getLastLogIndex() + 1
+	term := rf.getTerm()
+	isLeader := rf.isLeader()
 
 	return index, term, isLeader
 }
@@ -397,7 +399,7 @@ func (rf *Raft) getHeartbeatDuration() time.Duration {
 }
 
 func (rf *Raft) getElectionTimeout() time.Duration {
-	electionTimeout := time.Duration(rand.Intn(200)+100) * rf.heartbeatDuration / 100
+	electionTimeout := time.Duration(rand.Intn(200)+200) * rf.heartbeatDuration / 100
 	return electionTimeout
 }
 
@@ -423,6 +425,9 @@ func (rf *Raft) setTerm(term int) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 	//每一个term只会投票给一个人
+	if rf.currentTerm == term {
+		return
+	}
 	rf.votedFor = -1
 	rf.currentTerm = term
 }
@@ -498,13 +503,10 @@ func (rf *Raft) isCandidate() bool {
 }
 
 func (rf *Raft) followerLoop() {
-	if !rf.isFollower() {
-		return
-	}
 	DPrintf("follower %d, term %d\n", rf.getMe(), rf.getTerm())
 	electionTimeout := rf.getElectionTimeout()
 	timer := time.NewTimer(electionTimeout)
-	for {
+	for rf.isFollower() {
 		select {
 		case <-timer.C:
 			lastElectionTime := rf.getElectionTime()
@@ -523,24 +525,25 @@ func (rf *Raft) candidateLoop() {
 	peers := rf.getPeers()
 	doVote := true
 	replyChan := make(chan *RequestVoteReply)
-	VoteGranted := 0
-	var timer *time.Timer
+	voteGranted := 0
+	electionTimeout := rf.getElectionTimeout()
+	timer := time.NewTimer(electionTimeout)
+	heartbeatDuration := rf.getHeartbeatDuration()
 	for rf.isCandidate() {
 		if doVote {
-			electionTimeout := rf.getElectionTimeout()
-			timer = time.NewTimer(electionTimeout)
+			electionTimeout = rf.getElectionTimeout()
+			timer.Reset(electionTimeout)
 			doVote = false
-			VoteGranted = 1
+			voteGranted = 1
 			for server := range peers {
 				if server == me {
 					continue
 				}
 
-				rf.setVoteFor(me)
 				rf.setTerm(rf.getTerm() + 1)
+				rf.setVoteFor(me)
 
 				DPrintf("candidate %d, term %d\n", rf.getMe(), rf.getTerm())
-				heartbeatDuration := rf.getHeartbeatDuration()
 				term := rf.getTerm()
 				go func(server int) {
 					lastLogIndex := rf.getLastLogIndex()
@@ -558,8 +561,8 @@ func (rf *Raft) candidateLoop() {
 				}(server)
 			}
 		}
-		DPrintf("candidate %d received %d votes\n", me, VoteGranted)
-		if VoteGranted > len(peers)/2 {
+		DPrintf("candidate %d received %d votes\n", me, voteGranted)
+		if voteGranted > len(peers)/2 {
 			DPrintf("candidate %d become leader, term %d\n", me, rf.getTerm())
 			rf.becomeLeader()
 			return
@@ -569,8 +572,9 @@ func (rf *Raft) candidateLoop() {
 			//election timeout, need relection
 			doVote = true
 		case reply := <-replyChan:
+			//handle heartbeat response
 			if reply.VoteGranted == true {
-				VoteGranted++
+				voteGranted++
 			}
 			term := rf.getTerm()
 			if reply.Term > term {
