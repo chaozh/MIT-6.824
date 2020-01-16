@@ -95,9 +95,9 @@ type Raft struct {
 
 	LeaderState
 
-	electionTimer *time.Timer
+	electionDeadline time.Time
+	electionTimeout  time.Duration
 
-	ctx    context.Context
 	cancel context.CancelFunc
 }
 
@@ -171,16 +171,19 @@ type RequestVoteReply struct {
 */
 func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	// Your code here (2A, 2B).
-	term := rf.Term()
-	reply.Term = term
 	reply.VoteGranted = false
-	if args.Term < term {
+	if args.Term < rf.Term() {
+		reply.Term = rf.Term()
 		return
-	} else if args.Term > term {
+	} else if args.Term > rf.Term() {
 		rf.BecomeFollower(args.Term, args.CandidateID)
+		rf.ResetElectionDeadline()
 		reply.VoteGranted = true
 		return
 	}
+
+	log.Printf("%d request vote, term: %d\n", args.CandidateID, args.Term)
+	log.Printf("%d has voted for %d, term: %d\n", rf.me, rf.votedFor, rf.currentTerm)
 
 	if rf.VotedFor() != -1 && rf.VotedFor() != args.CandidateID {
 		return
@@ -198,6 +201,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	}
 
 	rf.BecomeFollower(args.Term, args.CandidateID)
+	rf.ResetElectionDeadline()
 	reply.VoteGranted = true
 	return
 }
@@ -281,20 +285,19 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 		return
 	} else if args.Term > term {
 		// remote term is bigger than local
-		rf.BecomeFollower(args.Term, -1)
-		rf.ResetElectionTimer(rf.ElectionTimeout())
+		rf.BecomeFollower(args.Term, args.LeaderID)
+		rf.ResetElectionDeadline()
 		reply.Success = true
 		return
 	}
 
-	if len(args.Entries) != 0 {
-		if rf.IsLeader() {
-			// leader do not accept any log entry
-			reply.Success = false
-			return
+	// heartbeat request with empty entry
+	if len(args.Entries) == 0 {
+		rf.ResetElectionDeadline()
+		if rf.IsCandidate() {
+			rf.BecomeFollower(args.Term, args.LeaderID)
 		}
 	}
-	rf.ResetElectionTimer(rf.ElectionTimeout())
 	reply.Success = true
 	return
 }
@@ -344,7 +347,6 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 func (rf *Raft) Kill() {
 	// Your code here, if desired.
 	rf.cancel()
-	rf.electionTimer.Stop()
 }
 
 //
@@ -359,30 +361,48 @@ func (rf *Raft) Kill() {
 // for any long-running work.
 //
 
-func (rf *Raft) HeartbeatDuration() time.Duration {
-	return HeartbeatInterval
-}
-
 func (rf *Raft) ElectionTimeout() time.Duration {
-	return 2*HeartbeatInterval + time.Duration(rand.Intn(200))*time.Millisecond
-}
-
-func (rf *Raft) ResetElectionTimer(d time.Duration) {
-	rf.mu.Lock()
-	defer rf.mu.Unlock()
-	rf.electionTimer.Reset(d)
-}
-
-func (rf *Raft) ElectionTimer() <-chan time.Time {
 	rf.mu.RLock()
 	defer rf.mu.RUnlock()
-	return rf.electionTimer.C
+	return rf.electionTimeout
 }
 
-func (rf *Raft) StopElectionTimer() {
+func (rf *Raft) ResetElectionTimedout() {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
-	rf.electionTimer.Stop()
+	rand.Seed(time.Now().UnixNano())
+	r := rand.Intn(200)
+	rf.electionTimeout = 2*HeartbeatInterval + time.Duration(r)*time.Millisecond
+	DPrintf("election timeout %v, %v", rf.electionTimeout, rf.me)
+}
+
+func (rf *Raft) ResetElectionDeadline() {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	rf.electionDeadline = time.Now().Add(rf.electionTimeout)
+}
+
+func (rf *Raft) ElectionDeadline() time.Time {
+	rf.mu.RLock()
+	defer rf.mu.RUnlock()
+	return rf.electionDeadline
+}
+
+func (rf *Raft) Wait4ElectionTimeout(ctx context.Context) error {
+	timer := time.NewTimer(rf.ElectionTimeout())
+	defer timer.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-timer.C:
+			if rf.ElectionDeadline().Before(time.Now()) {
+				// election timeout fire
+				return nil
+			}
+		}
+		timer.Reset(rf.ElectionTimeout())
+	}
 }
 
 func (rf *Raft) Term() int {
@@ -439,7 +459,6 @@ func (rf *Raft) BecomeFollower(term, leaderID int) {
 	defer rf.mu.Unlock()
 	rf.PersistentState.currentTerm = term
 	rf.votedFor = leaderID
-	rf.electionTimer.Reset(rf.ElectionTimeout())
 	rf.status = RaftStatus_Follower
 }
 
@@ -488,45 +507,43 @@ func (rf *Raft) Log(id int) (LogEntry, bool) {
 	return rf.log[id], true
 }
 
-func (rf *Raft) FollowerLoop() {
+func (rf *Raft) FollowerLoop(ctx context.Context) {
 	if !rf.IsFollower() {
 		return
 	}
 
-	d := rf.ElectionTimeout()
-	log.Println("follower timeout:", d)
-
-	rf.ResetElectionTimer(d)
 	for rf.IsFollower() {
 		select {
-		case <-rf.ctx.Done():
+		case <-ctx.Done():
 			return
-		case <-rf.ElectionTimer():
-			rf.BecomeCandidate()
+		default:
+		}
+		if err := rf.Wait4ElectionTimeout(ctx); err != nil {
 			return
 		}
+		rf.BecomeCandidate()
+		return
 	}
 }
 
-func (rf *Raft) CandidateLoop() {
+func (rf *Raft) CandidateLoop(ctx context.Context) {
 	if !rf.IsCandidate() {
 		return
 	}
-	log.Println("candidate...", rf.me)
 
 	me := rf.Me()
 	count := len(rf.Peers())
-Loop:
+	timer := time.NewTimer(rf.ElectionTimeout())
+	defer timer.Stop()
 	for rf.IsCandidate() {
+		log.Println("candidate...", rf.me)
 		select {
-		case <-rf.ctx.Done():
+		case <-ctx.Done():
 			return
 		default:
 		}
 		rf.IncrTerm()
-		electionTimeout := rf.ElectionTimeout()
-		log.Println(electionTimeout)
-		rf.ResetElectionTimer(electionTimeout)
+		rf.ResetElectionDeadline()
 		rf.VoteFor(me)
 
 		resCh := make(chan *RequestVoteReply, count-1)
@@ -543,7 +560,7 @@ Loop:
 				continue
 			}
 			go func(peer int) {
-				ctx, cancel := context.WithTimeout(rf.ctx, electionTimeout)
+				ctx, cancel := context.WithTimeout(ctx, HeartbeatInterval)
 				defer cancel()
 				reply := &RequestVoteReply{}
 				if !rf.sendRequestVote(ctx, peer, args, reply) {
@@ -557,70 +574,74 @@ Loop:
 		votes := 1
 		for peer := 0; peer < count-1; peer++ {
 			select {
-			case <-rf.ElectionTimer():
-				continue Loop
+			case <-ctx.Done():
+				return
 			case res := <-resCh:
 				if res.Term > rf.Term() {
 					rf.BecomeFollower(res.Term, -1)
+					rf.ResetElectionDeadline()
 					return
 				}
 
 				if res.VoteGranted {
 					votes++
-					if votes > count/2 {
-						rf.BecomeLeader()
-						return
-					}
 				}
 			}
 		}
+		if votes > count/2 {
+			rf.BecomeLeader()
+			return
+		}
+		<-timer.C
+		rf.ResetElectionTimedout()
+		timer.Reset(rf.ElectionTimeout())
 	}
 }
 
-func (rf *Raft) LeaderLoop() {
+func (rf *Raft) LeaderLoop(ctx context.Context) {
 	if !rf.IsLeader() {
 		return
 	}
 
-	rf.StopElectionTimer()
-
 	count := len(rf.Peers())
 	me := rf.Me()
+	ticker := time.NewTicker(rf.ElectionTimeout())
+	defer ticker.Stop()
 	for rf.IsLeader() {
-		timer := time.NewTimer(rf.HeartbeatDuration())
 		select {
-		case <-rf.ctx.Done():
-			timer.Stop()
+		case <-ctx.Done():
 			return
-		case <-timer.C:
-			args := &AppendEntriesArgs{
-				Term: rf.Term(),
+		default:
+		}
+		args := &AppendEntriesArgs{
+			Term: rf.Term(),
+		}
+		resCh := make(chan *AppendEntriesReply, count-1)
+		for peer := 0; peer < count; peer++ {
+			if peer == me {
+				//skip myself
+				continue
 			}
-			resCh := make(chan *AppendEntriesReply, count-1)
-			for peer := 0; peer < count; peer++ {
-				if peer == me {
-					//skip myself
-					continue
+			go func(peer int) {
+				reply := &AppendEntriesReply{}
+				ctx, cancel := context.WithTimeout(ctx, HeartbeatInterval)
+				defer cancel()
+				if !rf.sendAppendEntries(ctx, peer, args, reply) {
+					DPrintf("SendAppendEntries failed, %d -> %d", me, peer)
 				}
-				go func(peer int) {
-					reply := &AppendEntriesReply{}
-					ctx, cancel := context.WithTimeout(rf.ctx, rf.HeartbeatDuration())
-					defer cancel()
-					if !rf.sendAppendEntries(ctx, peer, args, reply) {
-						DPrintf("SendAppendEntries failed, %d -> %d", me, peer)
-					}
-					resCh <- reply
-				}(peer)
-			}
+				resCh <- reply
+			}(peer)
+		}
 
-			for peer := 0; peer < count-1; peer++ {
-				reply := <-resCh
-				if reply.Term > rf.Term() {
-					rf.BecomeFollower(reply.Term, -1)
-					return
-				}
+		for peer := 0; peer < count-1; peer++ {
+			reply := <-resCh
+			if reply.Term > rf.Term() {
+				rf.BecomeFollower(reply.Term, -1)
+				rf.ResetElectionDeadline()
+				return
 			}
 		}
+		<-ticker.C
 	}
 }
 
@@ -631,29 +652,28 @@ func Make(peers []*labrpc.ClientEnd, me int,
 		me:        me,
 		persister: persister,
 	}
-	rf.electionTimer = time.NewTimer(rf.ElectionTimeout())
 
 	ctx, cancel := context.WithCancel(context.Background())
+	rf.cancel = cancel
 
 	// initialize from state persisted before a crash
 	rf.readPersist(persister.ReadRaftState())
 
-	rf.ctx = ctx
-	rf.cancel = cancel
-
 	// startup as follower
 	rf.BecomeFollower(0, -1)
+	rf.ResetElectionDeadline()
+	rf.ResetElectionTimedout()
 
 	go func() {
 		for {
 			select {
-			case <-rf.ctx.Done():
+			case <-ctx.Done():
 				return
 			default:
 			}
-			rf.LeaderLoop()
-			rf.FollowerLoop()
-			rf.CandidateLoop()
+			rf.LeaderLoop(ctx)
+			rf.FollowerLoop(ctx)
+			rf.CandidateLoop(ctx)
 		}
 	}()
 
