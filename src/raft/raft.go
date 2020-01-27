@@ -20,7 +20,6 @@ package raft
 import (
 	"context"
 	"labrpc"
-	"log"
 	"math/rand"
 	"sync"
 	"time"
@@ -170,38 +169,45 @@ type RequestVoteReply struct {
     2. 如果 votedFor 为空或者为 candidateId，并且候选人的日志至少和自己一样新，那么就投票给他（5.2 节，5.4 节）
 */
 func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
+	rf.requestVote(args, reply)
+	DPrintf("%d, %d -> %d, %d, %v", args.CandidateID, args.Term, rf.me, rf.currentTerm, reply.VoteGranted)
+}
+func (rf *Raft) requestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
 	// Your code here (2A, 2B).
 	reply.VoteGranted = false
-	if args.Term < rf.Term() {
-		reply.Term = rf.Term()
+	term := rf.currentTerm
+	if args.Term < term {
+		reply.Term = term
 		return
-	} else if args.Term > rf.Term() {
-		rf.BecomeFollower(args.Term, args.CandidateID)
-		rf.ResetElectionDeadline()
+	} else if args.Term > term {
+		rf.resetElectionDeadlineNoLock()
+		rf.becomeFollowerNolock(args.Term, args.CandidateID)
 		reply.VoteGranted = true
 		return
 	}
 
-	log.Printf("%d request vote, term: %d\n", args.CandidateID, args.Term)
-	log.Printf("%d has voted for %d, term: %d\n", rf.me, rf.votedFor, rf.currentTerm)
+	DPrintf("%d request vote, term: %d\n", args.CandidateID, args.Term)
+	DPrintf("%d has voted for %d, term: %d\n", rf.me, rf.votedFor, rf.currentTerm)
 
-	if rf.VotedFor() != -1 && rf.VotedFor() != args.CandidateID {
+	if rf.votedFor != -1 && rf.votedFor != args.CandidateID {
 		return
 	}
 
 	//index较大的，日志更新；同样index下，最后一条term较大的，日志更新；同样index和同样最后一条term情况下，日志更长的更新
-	lastLogIndex := rf.LastLogIndex()
+	lastLogIndex := rf.lastLogIndexNolock()
 	if args.LastLogIndex < lastLogIndex {
 		return
 	} else if args.LastLogIndex == lastLogIndex {
-		lastLogTerm := rf.LastLogTerm()
+		lastLogTerm := rf.lastLogTermNolock()
 		if args.LastLogTerm < lastLogTerm {
 			return
 		}
 	}
 
-	rf.BecomeFollower(args.Term, args.CandidateID)
-	rf.ResetElectionDeadline()
+	rf.resetElectionDeadlineNoLock()
+	rf.becomeFollowerNolock(args.Term, args.CandidateID)
 	reply.VoteGranted = true
 	return
 }
@@ -278,24 +284,26 @@ type AppendEntriesReply struct {
 //
 func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) {
 	// Your code here (2A, 2B).
-	term := rf.Term()
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	term := rf.currentTerm
 	reply.Term = term
 	if args.Term < term {
 		reply.Success = false
 		return
 	} else if args.Term > term {
 		// remote term is bigger than local
-		rf.BecomeFollower(args.Term, args.LeaderID)
-		rf.ResetElectionDeadline()
+		rf.becomeFollowerNolock(args.Term, args.LeaderID)
+		rf.resetElectionDeadlineNoLock()
 		reply.Success = true
 		return
 	}
 
 	// heartbeat request with empty entry
 	if len(args.Entries) == 0 {
-		rf.ResetElectionDeadline()
-		if rf.IsCandidate() {
-			rf.BecomeFollower(args.Term, args.LeaderID)
+		rf.resetElectionDeadlineNoLock()
+		if rf.isCandidateNolock() {
+			rf.becomeFollowerNolock(args.Term, args.LeaderID)
 		}
 	}
 	reply.Success = true
@@ -379,6 +387,10 @@ func (rf *Raft) ResetElectionTimedout() {
 func (rf *Raft) ResetElectionDeadline() {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
+	rf.resetElectionDeadlineNoLock()
+}
+
+func (rf *Raft) resetElectionDeadlineNoLock() {
 	rf.electionDeadline = time.Now().Add(rf.electionTimeout)
 }
 
@@ -426,6 +438,10 @@ func (rf *Raft) IncrTerm() {
 func (rf *Raft) LastLogIndex() int {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
+	return rf.lastLogIndexNolock()
+}
+
+func (rf *Raft) lastLogIndexNolock() int {
 	if len(rf.log) == 0 {
 		return 0
 	}
@@ -435,6 +451,10 @@ func (rf *Raft) LastLogIndex() int {
 func (rf *Raft) LastLogTerm() int {
 	rf.mu.RLock()
 	defer rf.mu.RUnlock()
+	return rf.lastLogTermNolock()
+}
+
+func (rf *Raft) lastLogTermNolock() int {
 	if len(rf.log) == 0 {
 		return 0
 	}
@@ -445,18 +465,30 @@ func (rf *Raft) LastLogTerm() int {
 func (rf *Raft) BecomeLeader() {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
+	rf.becomeLeaderNolock()
+}
+
+func (rf *Raft) becomeLeaderNolock() {
 	rf.status = RaftStatus_Leader
 }
 
 func (rf *Raft) BecomeCandidate() {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
+	rf.becomeCandidateNolock()
+}
+
+func (rf *Raft) becomeCandidateNolock() {
 	rf.status = RaftStatus_Candidate
 }
 
 func (rf *Raft) BecomeFollower(term, leaderID int) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
+	rf.becomeFollowerNolock(term, leaderID)
+}
+
+func (rf *Raft) becomeFollowerNolock(term, leaderID int) {
 	rf.PersistentState.currentTerm = term
 	rf.votedFor = leaderID
 	rf.status = RaftStatus_Follower
@@ -484,17 +516,30 @@ func (rf *Raft) VoteFor(candidateID int) {
 func (rf *Raft) IsLeader() bool {
 	rf.mu.RLock()
 	defer rf.mu.RUnlock()
+	return rf.isLeaderNolock()
+}
+
+func (rf *Raft) isLeaderNolock() bool {
 	return rf.status == RaftStatus_Leader
 }
 
 func (rf *Raft) IsFollower() bool {
 	rf.mu.RLock()
 	defer rf.mu.RUnlock()
+	return rf.isFollowerNolock()
+}
+
+func (rf *Raft) isFollowerNolock() bool {
 	return rf.status == RaftStatus_Follower
 }
+
 func (rf *Raft) IsCandidate() bool {
 	rf.mu.RLock()
 	defer rf.mu.RUnlock()
+	return rf.isCandidateNolock()
+}
+
+func (rf *Raft) isCandidateNolock() bool {
 	return rf.status == RaftStatus_Candidate
 }
 
@@ -533,25 +578,29 @@ func (rf *Raft) CandidateLoop(ctx context.Context) {
 
 	me := rf.Me()
 	count := len(rf.Peers())
-	timer := time.NewTimer(rf.ElectionTimeout())
-	defer timer.Stop()
 	for rf.IsCandidate() {
-		log.Println("candidate...", rf.me)
+		DPrintf("candidate... %d", rf.me)
 		select {
 		case <-ctx.Done():
 			return
 		default:
 		}
-		rf.IncrTerm()
-		rf.ResetElectionDeadline()
-		rf.VoteFor(me)
+
+		rf.mu.Lock()
+		lastLogIndex := rf.lastLogIndexNolock()
+		lastLogTerm := rf.lastLogTermNolock()
+		rf.currentTerm++
+		term := rf.currentTerm
+		rf.resetElectionDeadlineNoLock()
+		rf.votedFor = me
+		rf.mu.Unlock()
 
 		resCh := make(chan *RequestVoteReply, count-1)
 		args := &RequestVoteArgs{
-			Term:         rf.Term(),
+			Term:         term,
 			CandidateID:  me,
-			LastLogIndex: rf.LastLogIndex(),
-			LastLogTerm:  rf.LastLogTerm(),
+			LastLogIndex: lastLogIndex,
+			LastLogTerm:  lastLogTerm,
 		}
 
 		for peer := 0; peer < count; peer++ {
@@ -567,7 +616,6 @@ func (rf *Raft) CandidateLoop(ctx context.Context) {
 					DPrintf("SendRequestVote failed, %d -> %d", me, peer)
 				}
 				resCh <- reply
-				log.Printf("%d -> %d, %v\n", me, peer, reply.VoteGranted)
 			}(peer)
 		}
 
@@ -577,6 +625,9 @@ func (rf *Raft) CandidateLoop(ctx context.Context) {
 			case <-ctx.Done():
 				return
 			case res := <-resCh:
+				if term != rf.Term() {
+					return
+				}
 				if res.Term > rf.Term() {
 					rf.BecomeFollower(res.Term, -1)
 					rf.ResetElectionDeadline()
@@ -589,12 +640,13 @@ func (rf *Raft) CandidateLoop(ctx context.Context) {
 			}
 		}
 		if votes > count/2 {
-			rf.BecomeLeader()
+			if term == rf.Term() {
+				rf.BecomeLeader()
+			}
 			return
 		}
-		<-timer.C
 		rf.ResetElectionTimedout()
-		timer.Reset(rf.ElectionTimeout())
+		time.Sleep(rf.ElectionTimeout())
 	}
 }
 
