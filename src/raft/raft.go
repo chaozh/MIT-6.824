@@ -105,7 +105,7 @@ type Raft struct {
 func (rf *Raft) GetState() (int, bool) {
 
 	// Your code here (2A).
-	return rf.Term(), rf.status == RaftStatus_Leader
+	return rf.currentTerm, rf.status == RaftStatus_Leader
 }
 
 //
