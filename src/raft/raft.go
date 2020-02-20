@@ -58,7 +58,7 @@ const (
 
 type LogEntry struct {
 	Term int
-	Cmd  string
+	Cmd  interface{}
 }
 
 type PersistentState struct {
@@ -105,7 +105,7 @@ type Raft struct {
 func (rf *Raft) GetState() (int, bool) {
 
 	// Your code here (2A).
-	return rf.currentTerm, rf.status == RaftStatus_Leader
+	return rf.Term(), rf.IsLeader()
 }
 
 //
@@ -305,6 +305,15 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 		if rf.isCandidateNolock() {
 			rf.becomeFollowerNolock(args.Term, args.LeaderID)
 		}
+	} else {
+		entry, ok := rf.logNolock(args.PrevLogIndex)
+		if !ok {
+			return
+		}
+		if entry.Term != args.Term {
+			return
+		}
+		rf.appendEntry(entry)
 	}
 	reply.Success = true
 	return
@@ -339,9 +348,84 @@ func (rf *Raft) sendAppendEntries(ctx context.Context, server int, args *AppendE
 //
 func (rf *Raft) Start(command interface{}) (int, int, bool) {
 	// Your code here (2B).
-	nextIndex := rf.LastLogIndex() + 1
-	term := rf.Term()
-	isLeader := rf.IsLeader()
+	rf.mu.Lock()
+	nextIndex := rf.lastLogIndexNolock() + 1
+	term := rf.currentTerm
+	isLeader := rf.isLeaderNolock()
+	if !isLeader {
+		rf.mu.Unlock()
+		return nextIndex, term, isLeader
+	}
+
+	entry := LogEntry{
+		Term: term,
+		Cmd:  command,
+	}
+
+	rf.appendEntry(entry)
+	rf.mu.Unlock()
+
+	count := len(rf.Peers())
+	me := rf.me
+	ci := rf.CommitIndex()
+	resCh := make(chan *AppendEntriesReply, count-1)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	for peer := 0; peer < count; peer++ {
+		go func(peer int) {
+			if peer == me {
+				//skip myself
+				return
+			}
+
+		Retry:
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+			idx := rf.NextIndex(peer)
+			entries := rf.LogAfter(idx)
+			prevEntry, ok := rf.Log(idx - 1)
+			if !ok {
+				prevEntry.Cmd = nil
+				prevEntry.Term = 0
+			}
+
+			args := &AppendEntriesArgs{
+				Term:         term,
+				LeaderID:     me,
+				Entries:      entries,
+				LeaderCommit: ci,
+				PrevLogIndex: idx - 1,
+				PrevLogTerm:  prevEntry.Term,
+			}
+			reply := &AppendEntriesReply{}
+			if !rf.sendAppendEntries(ctx, peer, args, reply) {
+				DPrintf("SendAppendEntries failed, %d -> %d", me, peer)
+			}
+			if !reply.Success && reply.Term <= rf.Term() {
+				rf.SetNextIndex(peer, idx-1)
+				goto Retry
+			} else if reply.Success {
+				rf.SetMatchIndex(peer, idx)
+			}
+			resCh <- reply
+		}(peer)
+	}
+
+	for peer := 0; peer < count; peer++ {
+		if peer == me {
+			continue
+		}
+		reply := <-resCh
+		if reply.Term > rf.Term() {
+			cancel()
+			rf.BecomeFollower(reply.Term, -1)
+			rf.ResetElectionDeadline()
+			return nextIndex, term, false
+		}
+	}
 
 	return nextIndex, term, isLeader
 }
@@ -417,6 +501,18 @@ func (rf *Raft) Wait4ElectionTimeout(ctx context.Context) error {
 	}
 }
 
+func (rf *Raft) CommitIndex() int {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	return rf.commitIndex
+}
+
+func (rf *Raft) SetCommitIndex(ci int) {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	rf.commitIndex = ci
+}
+
 func (rf *Raft) Term() int {
 	rf.mu.RLock()
 	defer rf.mu.RUnlock()
@@ -427,12 +523,6 @@ func (rf *Raft) SetTerm(term int) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 	rf.PersistentState.currentTerm = term
-}
-
-func (rf *Raft) IncrTerm() {
-	rf.mu.Lock()
-	defer rf.mu.Unlock()
-	rf.PersistentState.currentTerm++
 }
 
 func (rf *Raft) LastLogIndex() int {
@@ -498,10 +588,6 @@ func (rf *Raft) Peers() []*labrpc.ClientEnd {
 	return rf.peers
 }
 
-func (rf *Raft) Me() int {
-	return rf.me
-}
-
 func (rf *Raft) VotedFor() int {
 	rf.mu.RLock()
 	defer rf.mu.RUnlock()
@@ -543,13 +629,69 @@ func (rf *Raft) isCandidateNolock() bool {
 	return rf.status == RaftStatus_Candidate
 }
 
-func (rf *Raft) Log(id int) (LogEntry, bool) {
+func (rf *Raft) appendEntry(entry LogEntry) {
+	rf.log = append(rf.log, entry)
+}
+
+func (rf *Raft) LogAfter(idx int) []LogEntry {
 	rf.mu.RLock()
 	defer rf.mu.RUnlock()
-	if id >= len(rf.log) {
+	if idx >= len(rf.log) {
+		return nil
+	}
+	if idx < 0 {
+		idx = 0
+	}
+	return rf.log[idx:]
+}
+
+func (rf *Raft) Log(idx int) (LogEntry, bool) {
+	rf.mu.RLock()
+	defer rf.mu.RUnlock()
+	return rf.logNolock(idx)
+}
+
+func (rf *Raft) logNolock(idx int) (LogEntry, bool) {
+	if idx >= len(rf.log) || idx < 0 {
 		return LogEntry{}, false
 	}
-	return rf.log[id], true
+	return rf.log[idx], true
+}
+
+func (rf *Raft) InitNextIndex() {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+
+	me := rf.me
+	count := len(rf.Peers())
+	rf.nextIndex = make(map[int]int)
+	for i := 0; i < count; i++ {
+		if i == me {
+			continue
+		}
+		rf.nextIndex[i] = rf.lastLogIndexNolock() + 1
+	}
+}
+
+func (rf *Raft) NextIndex(sever int) int {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	return rf.nextIndex[sever]
+}
+
+func (rf *Raft) SetNextIndex(sever, index int) {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	rf.nextIndex[sever] = index
+}
+
+func (rf *Raft) SetMatchIndex(server, idx int) {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	if rf.matchIndex == nil {
+		rf.matchIndex = make(map[int]int)
+	}
+	rf.matchIndex[sever] = index
 }
 
 func (rf *Raft) FollowerLoop(ctx context.Context) {
@@ -576,7 +718,7 @@ func (rf *Raft) CandidateLoop(ctx context.Context) {
 		return
 	}
 
-	me := rf.Me()
+	me := rf.me
 	count := len(rf.Peers())
 	for rf.IsCandidate() {
 		DPrintf("candidate... %d", rf.me)
@@ -655,8 +797,10 @@ func (rf *Raft) LeaderLoop(ctx context.Context) {
 		return
 	}
 
+	rf.InitNextIndex()
+	me := rf.me
 	count := len(rf.Peers())
-	me := rf.Me()
+
 	ticker := time.NewTicker(rf.ElectionTimeout())
 	defer ticker.Stop()
 	for rf.IsLeader() {
@@ -685,7 +829,10 @@ func (rf *Raft) LeaderLoop(ctx context.Context) {
 			}(peer)
 		}
 
-		for peer := 0; peer < count-1; peer++ {
+		for peer := 0; peer < count; peer++ {
+			if peer == me {
+				continue
+			}
 			reply := <-resCh
 			if reply.Term > rf.Term() {
 				rf.BecomeFollower(reply.Term, -1)
