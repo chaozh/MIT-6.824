@@ -61,23 +61,21 @@ type LogEntry struct {
 	Cmd  interface{}
 }
 
-type PersistentState struct {
+type Raft struct {
+	// PersistentState
 	currentTerm int
 	votedFor    int
 	log         []LogEntry
-}
 
-type VolatileState struct {
+	//VolatileState
 	commitIndex int
 	lastApplied int
-}
+	applyCh     chan ApplyMsg
 
-type LeaderState struct {
+	//LeaderState
 	nextIndex  map[int]int
 	matchIndex map[int]int
-}
 
-type Raft struct {
 	mu        sync.RWMutex        // Lock to protect shared access to this peer's state
 	peers     []*labrpc.ClientEnd // RPC end points of all peers
 	persister *Persister          // Object to hold this peer's persisted state
@@ -87,12 +85,6 @@ type Raft struct {
 	// Look at the paper's Figure 2 for a description of what
 	// state a Raft server must maintain.
 	status RaftStatus
-
-	PersistentState
-
-	VolatileState
-
-	LeaderState
 
 	electionDeadline time.Time
 	electionTimeout  time.Duration
@@ -296,7 +288,6 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 		rf.becomeFollowerNolock(args.Term, args.LeaderID)
 		rf.resetElectionDeadlineNoLock()
 		reply.Success = true
-		return
 	}
 
 	// heartbeat request with empty entry
@@ -312,14 +303,17 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 			return
 		}
 		rf.appendEntry(args.Entries...)
-		if rf.commitIndex < args.LeaderCommit {
-			if args.LeaderCommit > len(rf.log)-1 {
-				rf.commitIndex = len(rf.log) - 1
-			} else {
-				rf.commitIndex = args.LeaderCommit
-			}
-			DPrintf("follower %d new commit index %d", rf.me, rf.commitIndex)
+	}
+
+	if rf.commitIndex < args.LeaderCommit {
+		if len(rf.log) != 0 && args.LeaderCommit > len(rf.log)-1 {
+			rf.commitIndex = len(rf.log) - 1
+		} else {
+			rf.commitIndex = args.LeaderCommit
 		}
+
+		DPrintf("follower new commit index: %v", rf.commitIndex)
+		rf.maybeApplyEntry()
 	}
 	reply.Success = true
 	return
@@ -358,9 +352,8 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 	term := rf.currentTerm
 	isLeader := rf.isLeaderNolock()
 	if !isLeader {
-		nextIndex := rf.lastLogIndexNolock() + 1
 		rf.mu.Unlock()
-		return nextIndex, term, isLeader
+		return -1, term, isLeader
 	}
 
 	entry := LogEntry{
@@ -373,7 +366,6 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 
 	count := len(rf.Peers())
 	me := rf.me
-	DPrintf("%d send log %v", me, command)
 	ci := rf.CommitIndex()
 	resCh := make(chan *AppendEntriesReply, count-1)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -412,13 +404,12 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 				rf.SetNextIndex(peer, index-1)
 				goto Retry
 			} else if reply.Success {
-				rf.SetMatchIndex(peer, index)
+				rf.SetNextIndex(peer, index+len(entries))
+				rf.SetMatchIndex(peer, index+len(entries)-1)
 			}
 			resCh <- reply
 		}(peer)
 	}
-
-	DPrintf("send ok")
 
 	for peer := 0; peer < count; peer++ {
 		if peer == me {
@@ -435,29 +426,30 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 	}
 
 	_, lastLogID := rf.LastLog()
+	DPrintf("lastlogID %d, commitid %d", lastLogID, rf.CommitIndex())
 	for i := lastLogID; i > rf.CommitIndex(); i-- {
 		entry := rf.Log(i)
 		if entry.Term != rf.Term() {
 			break
 		}
 
-		commited := 0
-		for i := 0; i < count; i++ {
-			if i == me {
+		matched := 0
+		for ii := 0; ii < count; ii++ {
+			if ii == me {
 				continue
 			}
-			if rf.NextIndex(i) > i {
-				commited++
+			if rf.MatchIndex(ii) >= i {
+				matched++
 			}
 		}
-		if commited > count/2 {
-			DPrintf("leader %d new commind index %d", me, i)
+		if matched > count/2 {
 			rf.SetCommitIndex(i)
+			rf.MaybeApplyEntry()
 			break
 		}
 	}
 
-	nextIndex := rf.lastLogIndexNolock() + 1
+	nextIndex := rf.LastLogIndex()
 	DPrintf("nextIndex: %d, term: %d, isLeader: %v", nextIndex, term, isLeader)
 	return nextIndex, term, isLeader
 }
@@ -545,16 +537,36 @@ func (rf *Raft) SetCommitIndex(ci int) {
 	rf.commitIndex = ci
 }
 
+func (rf *Raft) MaybeApplyEntry() {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	rf.maybeApplyEntry()
+}
+
+func (rf *Raft) maybeApplyEntry() {
+	if rf.commitIndex <= rf.lastApplied {
+		return
+	}
+	rf.lastApplied++
+	entry := rf.log[rf.lastApplied]
+	applyMsg := ApplyMsg{
+		Index:   rf.lastApplied,
+		Command: entry.Cmd,
+	}
+
+	rf.applyCh <- applyMsg
+}
+
 func (rf *Raft) Term() int {
 	rf.mu.RLock()
 	defer rf.mu.RUnlock()
-	return rf.PersistentState.currentTerm
+	return rf.currentTerm
 }
 
 func (rf *Raft) SetTerm(term int) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
-	rf.PersistentState.currentTerm = term
+	rf.currentTerm = term
 }
 
 func (rf *Raft) LastLogIndex() int {
@@ -564,9 +576,6 @@ func (rf *Raft) LastLogIndex() int {
 }
 
 func (rf *Raft) lastLogIndexNolock() int {
-	if len(rf.log) == 0 {
-		return 0
-	}
 	return len(rf.log) - 1
 }
 
@@ -577,9 +586,6 @@ func (rf *Raft) LastLog() (LogEntry, int) {
 }
 
 func (rf *Raft) lastLog() (LogEntry, int) {
-	if len(rf.log) == 0 {
-		return LogEntry{}, 0
-	}
 	lastLog := rf.log[len(rf.log)-1]
 	return lastLog, len(rf.log) - 1
 }
@@ -611,7 +617,7 @@ func (rf *Raft) BecomeFollower(term, leaderID int) {
 }
 
 func (rf *Raft) becomeFollowerNolock(term, leaderID int) {
-	rf.PersistentState.currentTerm = term
+	rf.currentTerm = term
 	rf.votedFor = leaderID
 	rf.status = RaftStatus_Follower
 }
@@ -677,9 +683,6 @@ func (rf *Raft) LogAfter(idx int) []LogEntry {
 	if idx >= len(rf.log) {
 		return nil
 	}
-	if idx < 0 {
-		idx = 0
-	}
 	return rf.log[idx:]
 }
 
@@ -732,6 +735,12 @@ func (rf *Raft) SetMatchIndex(server, idx int) {
 		rf.matchIndex = make(map[int]int)
 	}
 	rf.matchIndex[server] = idx
+}
+
+func (rf *Raft) MatchIndex(server int) int {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	return rf.matchIndex[server]
 }
 
 func (rf *Raft) FollowerLoop(ctx context.Context) {
@@ -851,11 +860,22 @@ func (rf *Raft) LeaderLoop(ctx context.Context) {
 			return
 		default:
 		}
-		args := &AppendEntriesArgs{
-			Term: rf.Term(),
-		}
+		term := rf.Term()
 		resCh := make(chan *AppendEntriesReply, count-1)
 		for peer := 0; peer < count; peer++ {
+
+			index := rf.NextIndex(peer)
+			prevEntry := rf.Log(index - 1)
+			ci := rf.CommitIndex()
+
+			args := &AppendEntriesArgs{
+				Term:         term,
+				LeaderID:     me,
+				LeaderCommit: ci,
+				PrevLogIndex: index - 1,
+				PrevLogTerm:  prevEntry.Term,
+			}
+
 			if peer == me {
 				//skip myself
 				continue
@@ -889,9 +909,14 @@ func (rf *Raft) LeaderLoop(ctx context.Context) {
 func Make(peers []*labrpc.ClientEnd, me int,
 	persister *Persister, applyCh chan ApplyMsg) *Raft {
 	rf := &Raft{
-		peers:     peers,
-		me:        me,
-		persister: persister,
+		peers:       peers,
+		me:          me,
+		persister:   persister,
+		commitIndex: 0,
+		lastApplied: 0,
+		applyCh:     applyCh,
+		// init with a empty log
+		log: []LogEntry{{0, nil}},
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
