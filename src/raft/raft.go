@@ -19,6 +19,7 @@ package raft
 
 import (
 	"context"
+	"encoding/json"
 	"labrpc"
 	"math/rand"
 	"sync"
@@ -314,6 +315,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 
 	rf.maybeFollowerCommit(args.LeaderCommit)
 	rf.maybeApplyEntry()
+	DPrintf("%v logs %v", rf.me, rf.logs)
 	reply.Success = true
 	return
 }
@@ -429,7 +431,6 @@ func (rf *Raft) ResetElectionTimedout() {
 	rand.Seed(time.Now().UnixNano())
 	r := rand.Intn(200)
 	rf.electionTimeout = 2*HeartbeatInterval + time.Duration(r)*time.Millisecond
-	DPrintf("election timeout %v, %v", rf.electionTimeout, rf.Me())
 }
 
 func (rf *Raft) ResetElectionDeadline() {
@@ -699,6 +700,8 @@ func (rf *Raft) FollowerLoop(ctx context.Context) {
 		return
 	}
 
+	DPrintf("follower %v...", rf.Me())
+
 	for rf.IsFollower() {
 		select {
 		case <-ctx.Done():
@@ -849,6 +852,8 @@ func (rf *Raft) leaderSendEntriesLoop(ctx context.Context) {
 					PrevLogIndex: index - 1,
 					PrevLogTerm:  prevEntry.Term,
 				}
+				data, _ := json.Marshal(args)
+				DPrintf(" append req %s", data)
 				reply := &AppendEntriesReply{}
 				if !rf.sendAppendEntries(ctx, peer, args, reply) {
 					DPrintf("SendAppendEntries failed, %d -> %d", me, peer)
@@ -969,7 +974,7 @@ func (rf *Raft) leaderHeartbeatLoop(ctx context.Context) {
 				ctx, cancel := context.WithTimeout(ctx, HeartbeatInterval)
 				defer cancel()
 				if !rf.sendAppendEntries(ctx, peer, args, reply) {
-					DPrintf("SendAppendEntries failed, %d -> %d", me, peer)
+					DPrintf("Heartbeat failed, %d -> %d", me, peer)
 				}
 				resCh <- reply
 			}(peer)
