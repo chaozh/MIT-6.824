@@ -50,14 +50,16 @@ package labrpc
 //   pass svc to srv.AddService()
 //
 
-import "encoding/gob"
-import "bytes"
-import "reflect"
-import "sync"
-import "log"
-import "strings"
-import "math/rand"
-import "time"
+import (
+	"bytes"
+	"encoding/gob"
+	"log"
+	"math/rand"
+	"reflect"
+	"strings"
+	"sync"
+	"time"
+)
 
 type reqMsg struct {
 	endname  interface{} // name of sending ClientEnd

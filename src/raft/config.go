@@ -8,16 +8,19 @@ package raft
 // test with the original before submitting.
 //
 
-import "labrpc"
-import "log"
-import "sync"
-import "testing"
-import "runtime"
-import crand "crypto/rand"
-import "encoding/base64"
-import "sync/atomic"
-import "time"
-import "fmt"
+import (
+	"labrpc"
+	"log"
+	"runtime"
+	"sync"
+	"testing"
+
+	crand "crypto/rand"
+	"encoding/base64"
+	"fmt"
+	"sync/atomic"
+	"time"
+)
 
 func randstring(n int) string {
 	b := make([]byte, 2*n)
@@ -423,7 +426,7 @@ func (cfg *config) one(cmd int, expectedServers int) int {
 			// somebody claimed to be the leader and to have
 			// submitted our command; wait a while for agreement.
 			t1 := time.Now()
-			for time.Since(t1).Seconds() < 2 {
+			for time.Since(t1).Seconds() < 5 {
 				nd, cmd1 := cfg.nCommitted(index)
 				if nd > 0 && nd >= expectedServers {
 					// committed

@@ -19,7 +19,6 @@ package raft
 
 import (
 	"context"
-	"encoding/json"
 	"labrpc"
 	"math/rand"
 	"sync"
@@ -27,8 +26,9 @@ import (
 )
 
 const (
-	HeartbeatInterval          = time.Millisecond * 100
-	AppendEntriesRetryInterval = time.Millisecond * 200
+	HeartbeatInterval    = time.Millisecond * 100
+	HeartbeatTimeout     = time.Millisecond * 100
+	AppendEntriesTimeout = time.Millisecond * 500
 )
 
 // import "bytes"
@@ -165,6 +165,7 @@ type RequestVoteReply struct {
     2. 如果 votedFor 为空或者为 candidateId，并且候选人的日志至少和自己一样新，那么就投票给他（5.2 节，5.4 节）
 */
 func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
+	defer DPrintf("RequestVote ok: %v, %v -> %v, cost: %v", reply.VoteGranted, args.CandidateID, rf.me, time.Since(time.Now()))
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 	// Your code here (2A, 2B).
@@ -288,35 +289,40 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	term := rf.currentTerm
 	reply.Term = term
 	if args.Term < term {
+		DPrintf("%v -> %v, term smaller, fail", args.LeaderID, rf.me)
 		reply.Success = false
+		DPrintf("AppendEntries ok: %v, %v -> %v, cost: %v", reply.Success, args.LeaderID, rf.me, time.Since(time.Now()))
 		return
 	} else if args.Term > term {
 		// remote term is bigger than local
 		rf.becomeFollower(args.Term, args.LeaderID)
-		rf.resetElectionDeadline()
-		reply.Success = true
 	}
+	rf.resetElectionDeadline()
 
 	if len(args.Entries) == 0 {
 		// heartbeat request with empty entry
-		rf.resetElectionDeadline()
+		reply.Success = true
 		if rf.isCandidate() {
 			rf.becomeFollower(args.Term, args.LeaderID)
-			return
 		}
 	} else {
 		// handle entries
 		prevEntry := rf.log(args.PrevLogIndex)
 		if prevEntry.Term != args.PrevLogTerm {
-			return
+			DPrintf("%v prevTerm: %v, args.Term: %v", rf.me, prevEntry.Term, args.PrevLogTerm)
+			reply.Success = false
+		} else {
+			rf.appendEntry(args.Entries...)
+			reply.Success = true
 		}
-		rf.appendEntry(args.Entries...)
 	}
 
 	rf.maybeFollowerCommit(args.LeaderCommit)
 	rf.maybeApplyEntry()
-	DPrintf("%v logs %v", rf.me, rf.logs)
-	reply.Success = true
+	if len(args.Entries) != 0 {
+		DPrintf("%v logs %v", rf.me, rf.logs)
+	}
+	DPrintf("AppendEntries ok: %v, %v -> %v, cost: %v", reply.Success, args.LeaderID, rf.me, time.Since(time.Now()))
 	return
 }
 
@@ -486,9 +492,8 @@ func (rf *Raft) maybeFollowerCommit(leaderCommit int) {
 			rf.commitIndex = len(rf.logs) - 1
 		} else {
 			rf.commitIndex = leaderCommit
+			DPrintf("follower %d new commit index: %v", rf.me, rf.commitIndex)
 		}
-
-		DPrintf("follower %d new commit index: %v", rf.me, rf.commitIndex)
 	}
 }
 
@@ -631,9 +636,6 @@ func (rf *Raft) appendEntry(entries ...LogEntry) int {
 func (rf *Raft) LogAfter(idx int) []LogEntry {
 	rf.mu.RLock()
 	defer rf.mu.RUnlock()
-	if idx >= len(rf.logs) {
-		return nil
-	}
 	return rf.logs[idx:]
 }
 
@@ -724,7 +726,7 @@ func (rf *Raft) CandidateLoop(ctx context.Context) {
 	me := rf.Me()
 	count := len(rf.Peers())
 	for rf.IsCandidate() {
-		DPrintf("candidate... %d", rf.Me())
+		DPrintf("%v candidate... term: %v", rf.Me(), rf.currentTerm)
 		select {
 		case <-ctx.Done():
 			return
@@ -803,10 +805,12 @@ func (rf *Raft) leaderSendEntriesLoop(ctx context.Context) {
 
 	count := len(rf.Peers())
 	me := rf.Me()
-	replyCh := make(chan *AppendEntriesReply, count-1)
-	newMatched := make(chan struct{})
-	ctx, cancel := context.WithCancel(context.Background())
+	newMatched := make(chan struct{}, count-1)
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	rf.InitNextIndex()
+
 	for peer := 0; peer < count; peer++ {
 
 		if peer == me {
@@ -817,15 +821,6 @@ func (rf *Raft) leaderSendEntriesLoop(ctx context.Context) {
 		go func(peer int) {
 			na := rf.NewAppended()
 			for rf.IsLeader() {
-
-				select {
-				case <-na:
-				}
-
-				// avoid missing trigger
-				na = rf.NewAppended()
-
-			Retry:
 				select {
 				case <-ctx.Done():
 					return
@@ -834,9 +829,18 @@ func (rf *Raft) leaderSendEntriesLoop(ctx context.Context) {
 
 				index := rf.NextIndex(peer)
 				_, lastLogIndex := rf.LastLog()
+				DPrintf("index: %v, lastIndex: %v", index, lastLogIndex)
+				for index > lastLogIndex {
+					select {
+					case <-ctx.Done():
+						return
+					case <-na:
+					}
 
-				if index == lastLogIndex+1 {
-					continue
+					// avoid missing trigger
+					na = rf.NewAppended()
+					index = rf.NextIndex(peer)
+					_, lastLogIndex = rf.LastLog()
 				}
 
 				entries := rf.LogAfter(index)
@@ -852,81 +856,70 @@ func (rf *Raft) leaderSendEntriesLoop(ctx context.Context) {
 					PrevLogIndex: index - 1,
 					PrevLogTerm:  prevEntry.Term,
 				}
-				data, _ := json.Marshal(args)
-				DPrintf(" append req %s", data)
 				reply := &AppendEntriesReply{}
+				ctx, cancel := context.WithTimeout(ctx, AppendEntriesTimeout)
 				if !rf.sendAppendEntries(ctx, peer, args, reply) {
 					DPrintf("SendAppendEntries failed, %d -> %d", me, peer)
-					time.Sleep(AppendEntriesRetryInterval)
-					goto Retry
+					cancel()
+					continue
 				}
+				cancel()
+				DPrintf("%v need log %v from %v, ok: %v", peer, len(entries), rf.Me(), reply.Success)
 
-				if !reply.Success && reply.Term <= rf.Term() {
+				if !reply.Success {
 					rf.SetNextIndex(peer, index-1)
-					goto Retry
-				} else if reply.Success {
+					if reply.Term > rf.Term() {
+						cancel()
+						rf.BecomeFollower(reply.Term, -1)
+						rf.ResetElectionDeadline()
+						newMatched <- struct{}{}
+						return
+					}
+				} else {
 					rf.SetNextIndex(peer, index+len(entries))
 					rf.SetMatchIndex(peer, index+len(entries)-1)
-					close(newMatched)
-					newMatched = make(chan struct{})
-				}
-
-				select {
-				case <-ctx.Done():
-					return
-				case replyCh <- reply:
+					newMatched <- struct{}{}
 				}
 			}
 		}(peer)
 	}
 
-	go func() {
-		newMatchedOnce := newMatched
-		for {
-			select {
-			case <-newMatchedOnce:
-			}
-			// avoid missing new matched
-			newMatchedOnce = newMatched
-
-			_, lastLogID := rf.LastLog()
-			for i := lastLogID; i > rf.CommitIndex(); i-- {
-
-				select {
-				case <-ctx.Done():
-					return
-				default:
-				}
-
-				entry := rf.Log(i)
-				if entry.Term != rf.Term() {
-					break
-				}
-
-				matched := 1
-				for ii := 0; ii < count; ii++ {
-					if ii == me {
-						continue
-					}
-					if rf.MatchIndex(ii) >= i {
-						matched++
-					}
-				}
-				if matched > count/2 {
-					rf.SetCommitIndex(i)
-					rf.NewCommit()
-					rf.MaybeApplyEntry()
-					break
-				}
-			}
+	for rf.IsLeader() {
+		select {
+		case <-ctx.Done():
+			return
+		case <-newMatched:
 		}
-	}()
 
-	for reply := range replyCh {
-		if reply.Term > rf.Term() {
-			cancel()
-			rf.BecomeFollower(reply.Term, -1)
-			rf.ResetElectionDeadline()
+		_, lastLogID := rf.LastLog()
+		for i := lastLogID; i > rf.CommitIndex(); i-- {
+
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+
+			entry := rf.Log(i)
+			if entry.Term != rf.Term() {
+				break
+			}
+
+			matched := 1
+			for ii := 0; ii < count; ii++ {
+				if ii == me {
+					continue
+				}
+				if rf.MatchIndex(ii) >= i {
+					matched++
+				}
+			}
+			if matched > count/2 {
+				rf.SetCommitIndex(i)
+				rf.NewCommit()
+				rf.MaybeApplyEntry()
+				break
+			}
 		}
 	}
 }
@@ -936,7 +929,6 @@ func (rf *Raft) leaderHeartbeatLoop(ctx context.Context) {
 		return
 	}
 
-	rf.InitNextIndex()
 	me := rf.Me()
 	count := len(rf.Peers())
 
