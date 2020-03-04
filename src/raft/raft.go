@@ -94,6 +94,7 @@ type Raft struct {
 	electionTimeout  time.Duration
 
 	cancel context.CancelFunc
+	closed chan struct{}
 }
 
 // return currentTerm and whether this server
@@ -165,7 +166,6 @@ type RequestVoteReply struct {
     2. 如果 votedFor 为空或者为 candidateId，并且候选人的日志至少和自己一样新，那么就投票给他（5.2 节，5.4 节）
 */
 func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
-	defer DPrintf("RequestVote ok: %v, %v -> %v, cost: %v", reply.VoteGranted, args.CandidateID, rf.me, time.Since(time.Now()))
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 	// Your code here (2A, 2B).
@@ -289,9 +289,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	term := rf.currentTerm
 	reply.Term = term
 	if args.Term < term {
-		DPrintf("%v -> %v, term smaller, fail", args.LeaderID, rf.me)
 		reply.Success = false
-		DPrintf("AppendEntries ok: %v, %v -> %v, cost: %v", reply.Success, args.LeaderID, rf.me, time.Since(time.Now()))
 		return
 	} else if args.Term > term {
 		// remote term is bigger than local
@@ -299,22 +297,20 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	}
 	rf.resetElectionDeadline()
 
-	if len(args.Entries) == 0 {
-		// heartbeat request with empty entry
-		reply.Success = true
-		if rf.isCandidate() {
-			rf.becomeFollower(args.Term, args.LeaderID)
-		}
+	if rf.isCandidate() {
+		rf.becomeFollower(args.Term, args.LeaderID)
+		rf.cancel()
+	}
+
+	// handle entries
+	prevEntry := rf.log(args.PrevLogIndex)
+	if prevEntry.Term != args.PrevLogTerm {
+		reply.Success = false
 	} else {
-		// handle entries
-		prevEntry := rf.log(args.PrevLogIndex)
-		if prevEntry.Term != args.PrevLogTerm {
-			DPrintf("%v prevTerm: %v, args.Term: %v", rf.me, prevEntry.Term, args.PrevLogTerm)
-			reply.Success = false
-		} else {
+		if len(args.Entries) > 0 {
 			rf.appendEntry(args.Entries...)
-			reply.Success = true
 		}
+		reply.Success = true
 	}
 
 	rf.maybeFollowerCommit(args.LeaderCommit)
@@ -322,7 +318,6 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	if len(args.Entries) != 0 {
 		DPrintf("%v logs %v", rf.me, rf.logs)
 	}
-	DPrintf("AppendEntries ok: %v, %v -> %v, cost: %v", reply.Success, args.LeaderID, rf.me, time.Since(time.Now()))
 	return
 }
 
@@ -392,6 +387,7 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 //
 func (rf *Raft) Kill() {
 	// Your code here, if desired.
+	close(rf.closed)
 	rf.cancel()
 }
 
@@ -492,7 +488,6 @@ func (rf *Raft) maybeFollowerCommit(leaderCommit int) {
 			rf.commitIndex = len(rf.logs) - 1
 		} else {
 			rf.commitIndex = leaderCommit
-			DPrintf("follower %d new commit index: %v", rf.me, rf.commitIndex)
 		}
 	}
 }
@@ -698,10 +693,7 @@ func (rf *Raft) MatchIndex(server int) int {
 }
 
 func (rf *Raft) FollowerLoop(ctx context.Context) {
-	if !rf.IsFollower() {
-		return
-	}
-
+	rf.ResetElectionDeadline()
 	DPrintf("follower %v...", rf.Me())
 
 	for rf.IsFollower() {
@@ -719,10 +711,6 @@ func (rf *Raft) FollowerLoop(ctx context.Context) {
 }
 
 func (rf *Raft) CandidateLoop(ctx context.Context) {
-	if !rf.IsCandidate() {
-		return
-	}
-
 	me := rf.Me()
 	count := len(rf.Peers())
 	for rf.IsCandidate() {
@@ -761,7 +749,6 @@ func (rf *Raft) CandidateLoop(ctx context.Context) {
 				defer cancel()
 				reply := &RequestVoteReply{}
 				if !rf.sendRequestVote(ctx, peer, args, reply) {
-					DPrintf("SendRequestVote failed, %d -> %d", me, peer)
 				}
 				resCh <- reply
 			}(peer)
@@ -778,7 +765,7 @@ func (rf *Raft) CandidateLoop(ctx context.Context) {
 				}
 				if res.Term > rf.Term() {
 					rf.BecomeFollower(res.Term, -1)
-					rf.ResetElectionDeadline()
+					rf.cancel()
 					return
 				}
 
@@ -799,9 +786,6 @@ func (rf *Raft) CandidateLoop(ctx context.Context) {
 }
 
 func (rf *Raft) leaderSendEntriesLoop(ctx context.Context) {
-	if !rf.IsLeader() {
-		return
-	}
 
 	count := len(rf.Peers())
 	me := rf.Me()
@@ -820,6 +804,7 @@ func (rf *Raft) leaderSendEntriesLoop(ctx context.Context) {
 
 		go func(peer int) {
 			na := rf.NewAppended()
+			matched := false
 			for rf.IsLeader() {
 				select {
 				case <-ctx.Done():
@@ -829,8 +814,7 @@ func (rf *Raft) leaderSendEntriesLoop(ctx context.Context) {
 
 				index := rf.NextIndex(peer)
 				_, lastLogIndex := rf.LastLog()
-				DPrintf("index: %v, lastIndex: %v", index, lastLogIndex)
-				for index > lastLogIndex {
+				for index > lastLogIndex && matched {
 					select {
 					case <-ctx.Done():
 						return
@@ -859,26 +843,24 @@ func (rf *Raft) leaderSendEntriesLoop(ctx context.Context) {
 				reply := &AppendEntriesReply{}
 				ctx, cancel := context.WithTimeout(ctx, AppendEntriesTimeout)
 				if !rf.sendAppendEntries(ctx, peer, args, reply) {
-					DPrintf("SendAppendEntries failed, %d -> %d", me, peer)
 					cancel()
 					continue
 				}
 				cancel()
-				DPrintf("%v need log %v from %v, ok: %v", peer, len(entries), rf.Me(), reply.Success)
+				DPrintf("%v need log %v from %v, ok: %v", peer, len(entries), rf.me, reply.Success)
 
 				if !reply.Success {
-					rf.SetNextIndex(peer, index-1)
 					if reply.Term > rf.Term() {
-						cancel()
 						rf.BecomeFollower(reply.Term, -1)
-						rf.ResetElectionDeadline()
-						newMatched <- struct{}{}
+						rf.cancel()
 						return
 					}
+					rf.SetNextIndex(peer, index-1)
 				} else {
 					rf.SetNextIndex(peer, index+len(entries))
 					rf.SetMatchIndex(peer, index+len(entries)-1)
 					newMatched <- struct{}{}
+					matched = true
 				}
 			}
 		}(peer)
@@ -925,16 +907,10 @@ func (rf *Raft) leaderSendEntriesLoop(ctx context.Context) {
 }
 
 func (rf *Raft) leaderHeartbeatLoop(ctx context.Context) {
-	if !rf.IsLeader() {
-		return
-	}
-
 	me := rf.Me()
 	count := len(rf.Peers())
 
-	DPrintf("leader... %d", rf.Me())
-	ticker := time.NewTicker(rf.ElectionTimeout())
-	defer ticker.Stop()
+	DPrintf("leader... %d", me)
 	for rf.IsLeader() {
 		select {
 		case <-ctx.Done():
@@ -942,55 +918,56 @@ func (rf *Raft) leaderHeartbeatLoop(ctx context.Context) {
 		default:
 		}
 		term := rf.Term()
-		resCh := make(chan *AppendEntriesReply, count-1)
+		replyCh := make(chan *AppendEntriesReply, count-1)
 		for peer := 0; peer < count; peer++ {
-
-			index := rf.NextIndex(peer)
-			prevEntry := rf.Log(index - 1)
-			ci := rf.CommitIndex()
-
-			args := &AppendEntriesArgs{
-				Term:         term,
-				LeaderID:     me,
-				LeaderCommit: ci,
-				PrevLogIndex: index - 1,
-				PrevLogTerm:  prevEntry.Term,
-			}
-
 			if peer == me {
 				//skip myself
 				continue
 			}
 			go func(peer int) {
-				reply := &AppendEntriesReply{}
-				ctx, cancel := context.WithTimeout(ctx, HeartbeatInterval)
-				defer cancel()
-				if !rf.sendAppendEntries(ctx, peer, args, reply) {
-					DPrintf("Heartbeat failed, %d -> %d", me, peer)
+				ticker := time.NewTicker(HeartbeatInterval)
+				defer ticker.Stop()
+				for range ticker.C {
+					index := rf.NextIndex(peer)
+					prevEntry := rf.Log(index - 1)
+					ci := rf.CommitIndex()
+
+					args := &AppendEntriesArgs{
+						Term:         term,
+						LeaderID:     me,
+						LeaderCommit: ci,
+						PrevLogIndex: index - 1,
+						PrevLogTerm:  prevEntry.Term,
+					}
+
+					reply := &AppendEntriesReply{}
+					ctx, cancel := context.WithTimeout(ctx, HeartbeatInterval)
+					if !rf.sendAppendEntries(ctx, peer, args, reply) {
+						cancel()
+						continue
+					}
+					cancel()
+					replyCh <- reply
 				}
-				resCh <- reply
 			}(peer)
 		}
 
-		for peer := 0; peer < count; peer++ {
-			if peer == me {
-				continue
+		for reply := range replyCh {
+			select {
+			case <-ctx.Done():
+				return
+			default:
 			}
-			reply := <-resCh
 			if reply.Term > rf.Term() {
 				rf.BecomeFollower(reply.Term, -1)
-				rf.ResetElectionDeadline()
+				rf.cancel()
 				return
 			}
 		}
-		<-ticker.C
 	}
 }
 
 func (rf *Raft) LeaderLoop(ctx context.Context) {
-	if !rf.IsLeader() {
-		return
-	}
 	go rf.leaderHeartbeatLoop(ctx)
 	go rf.leaderSendEntriesLoop(ctx)
 	select {
@@ -1010,11 +987,9 @@ func Make(peers []*labrpc.ClientEnd, me int,
 		newAppended:  make(chan struct{}),
 		newCommitted: make(chan struct{}),
 		// init with a empty log
-		logs: []LogEntry{{0, nil}},
+		logs:   []LogEntry{{0, nil}},
+		closed: make(chan struct{}),
 	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	rf.cancel = cancel
 
 	// initialize from state persisted before a crash
 	rf.readPersist(persister.ReadRaftState())
@@ -1027,13 +1002,23 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	go func() {
 		for {
 			select {
-			case <-ctx.Done():
+			case <-rf.closed:
+				DPrintf("server %v closed...", rf.Me())
 				return
 			default:
 			}
-			rf.LeaderLoop(ctx)
-			rf.FollowerLoop(ctx)
-			rf.CandidateLoop(ctx)
+			ctx, cancel := context.WithCancel(context.Background())
+			rf.cancel = cancel
+
+			switch rf.status {
+			case RaftStatus_Leader:
+				rf.LeaderLoop(ctx)
+			case RaftStatus_Follower:
+				rf.FollowerLoop(ctx)
+			case RaftStatus_Candidate:
+				rf.CandidateLoop(ctx)
+			}
+			cancel()
 		}
 	}()
 
