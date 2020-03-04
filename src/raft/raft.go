@@ -361,20 +361,20 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 		Cmd:  command,
 	}
 
-	DPrintf("%d append entry, term: %d , cmd: %v", rf.Me(), rf.Term(), command)
 	lastLogID := rf.AppendEntry(entry)
+	DPrintf("%d append entry, term: %d , cmd: %v, will be commited :%v, logs: %v", rf.Me(), rf.Term(), command, lastLogID, rf.logs)
 
-	nc := rf.NewCommitted()
-	for {
-		select {
-		case <-nc:
-		}
-		nc = rf.NewCommitted()
-		if lastLogID <= rf.CommitIndex() {
-			break
-		}
-	}
-	DPrintf("command %v, commited in %v", command, lastLogID)
+	/*
+		nc := rf.NewCommitted()
+		for {
+			select {
+			case <-nc:
+			}
+			nc = rf.NewCommitted()
+			if lastLogID <= rf.CommitIndex() {
+				break
+			}
+		}*/
 	_, nextIndex := rf.LastLog()
 	return nextIndex, term, isLeader
 }
@@ -508,6 +508,7 @@ func (rf *Raft) maybeApplyEntry() {
 		Index:   rf.lastApplied,
 		Command: entry.Cmd,
 	}
+	DPrintf("%v new applied %v", rf.me, rf.lastApplied)
 
 	rf.newApplied <- applyMsg
 }
@@ -898,6 +899,7 @@ func (rf *Raft) leaderSendEntriesLoop(ctx context.Context) {
 			}
 			if matched > count/2 {
 				rf.SetCommitIndex(i)
+				DPrintf("new commit index: %v", i)
 				rf.NewCommit()
 				rf.MaybeApplyEntry()
 				break
