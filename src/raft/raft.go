@@ -171,36 +171,23 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	// Your code here (2A, 2B).
 	reply.VoteGranted = false
 	term := rf.currentTerm
+	reply.Term = term
 	if args.Term < term {
-		reply.Term = term
-		return
-	} else if args.Term > term {
-		lastLog, id := rf.lastLog()
-		if args.LastLogTerm < lastLog.Term {
-			return
-		}
-		if args.LastLogIndex < id {
-			return
-		}
-		rf.resetElectionDeadline()
-		rf.becomeFollower(args.Term, args.CandidateID)
-		reply.VoteGranted = true
 		return
 	}
 
 	DPrintf("%d request vote, term: %d\n", args.CandidateID, args.Term)
 	DPrintf("%d has voted for %d, term: %d\n", rf.Me(), rf.votedFor, rf.currentTerm)
 
-	if rf.votedFor != -1 && rf.votedFor != args.CandidateID {
+	if rf.votedFor != -1 && rf.votedFor != args.CandidateID && args.Term == term {
 		return
 	}
 
 	//index较大的，日志更新；同样index下，最后一条term较大的，日志更新；同样index和同样最后一条term情况下，日志更长的更新
-	_, lastLogIndex := rf.lastLog()
+	lastLog, lastLogIndex := rf.lastLog()
 	if args.LastLogIndex < lastLogIndex {
 		return
 	} else if args.LastLogIndex == lastLogIndex {
-		lastLog, _ := rf.lastLog()
 		if args.LastLogTerm < lastLog.Term {
 			return
 		}
@@ -307,6 +294,12 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	if prevEntry.Term != args.PrevLogTerm {
 		reply.Success = false
 	} else {
+		_, lastLogID := rf.lastLog()
+		if args.PrevLogIndex != lastLogID {
+			rf.truncateLog(args.PrevLogIndex)
+			DPrintf("%v truancate log to %v", rf.me, args.PrevLogIndex)
+		}
+
 		if len(args.Entries) > 0 {
 			rf.appendEntry(args.Entries...)
 		}
@@ -315,9 +308,6 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 
 	rf.maybeFollowerCommit(args.LeaderCommit)
 	rf.maybeApplyEntry()
-	if len(args.Entries) != 0 {
-		DPrintf("%v logs %v", rf.me, rf.logs)
-	}
 	return
 }
 
@@ -499,18 +489,17 @@ func (rf *Raft) MaybeApplyEntry() {
 }
 
 func (rf *Raft) maybeApplyEntry() {
-	if rf.commitIndex <= rf.lastApplied {
-		return
-	}
-	rf.lastApplied++
-	entry := rf.logs[rf.lastApplied]
-	applyMsg := ApplyMsg{
-		Index:   rf.lastApplied,
-		Command: entry.Cmd,
-	}
-	DPrintf("%v new applied %v", rf.me, rf.lastApplied)
+	for rf.commitIndex > rf.lastApplied {
+		rf.lastApplied++
+		entry := rf.logs[rf.lastApplied]
+		applyMsg := ApplyMsg{
+			Index:   rf.lastApplied,
+			Command: entry.Cmd,
+		}
 
-	rf.newApplied <- applyMsg
+		rf.newApplied <- applyMsg
+	}
+	DPrintf("%v new applied %v, logs: %v", rf.me, rf.lastApplied, rf.logs)
 }
 
 func (rf *Raft) Me() int {
@@ -629,10 +618,20 @@ func (rf *Raft) appendEntry(entries ...LogEntry) int {
 	return len(rf.logs) - 1
 }
 
-func (rf *Raft) LogAfter(idx int) []LogEntry {
+func (rf *Raft) LogAfter(id int) []LogEntry {
 	rf.mu.RLock()
 	defer rf.mu.RUnlock()
-	return rf.logs[idx:]
+	return rf.logs[id:]
+}
+
+func (rf *Raft) TruncateLog(id int) {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	rf.truncateLog(id)
+}
+
+func (rf *Raft) truncateLog(id int) {
+	rf.logs = rf.logs[:id+1]
 }
 
 func (rf *Raft) Log(idx int) LogEntry {
@@ -848,7 +847,7 @@ func (rf *Raft) leaderSendEntriesLoop(ctx context.Context) {
 					continue
 				}
 				cancel()
-				DPrintf("%v need log %v from %v, ok: %v", peer, len(entries), rf.me, reply.Success)
+				DPrintf("%v need log %v from %v, ok: %v, entries: %v", peer, len(entries), rf.me, reply.Success, entries)
 
 				if !reply.Success {
 					if reply.Term > rf.Term() {
@@ -913,58 +912,58 @@ func (rf *Raft) leaderHeartbeatLoop(ctx context.Context) {
 	count := len(rf.Peers())
 
 	DPrintf("leader... %d", me)
-	for rf.IsLeader() {
+	term := rf.Term()
+	replyCh := make(chan *AppendEntriesReply, count-1)
+	for peer := 0; peer < count; peer++ {
+		if peer == me {
+			//skip myself
+			continue
+		}
+		go func(peer int) {
+			ticker := time.NewTicker(HeartbeatInterval)
+			defer ticker.Stop()
+			for range ticker.C {
+
+				select {
+				case <-ctx.Done():
+					return
+				default:
+				}
+
+				index := rf.NextIndex(peer)
+				prevEntry := rf.Log(index - 1)
+				ci := rf.CommitIndex()
+
+				args := &AppendEntriesArgs{
+					Term:         term,
+					LeaderID:     me,
+					LeaderCommit: ci,
+					PrevLogIndex: index - 1,
+					PrevLogTerm:  prevEntry.Term,
+				}
+
+				reply := &AppendEntriesReply{}
+				ctx, cancel := context.WithTimeout(ctx, HeartbeatInterval)
+				if !rf.sendAppendEntries(ctx, peer, args, reply) {
+					cancel()
+					continue
+				}
+				cancel()
+				replyCh <- reply
+			}
+		}(peer)
+	}
+
+	for reply := range replyCh {
 		select {
 		case <-ctx.Done():
 			return
 		default:
 		}
-		term := rf.Term()
-		replyCh := make(chan *AppendEntriesReply, count-1)
-		for peer := 0; peer < count; peer++ {
-			if peer == me {
-				//skip myself
-				continue
-			}
-			go func(peer int) {
-				ticker := time.NewTicker(HeartbeatInterval)
-				defer ticker.Stop()
-				for range ticker.C {
-					index := rf.NextIndex(peer)
-					prevEntry := rf.Log(index - 1)
-					ci := rf.CommitIndex()
-
-					args := &AppendEntriesArgs{
-						Term:         term,
-						LeaderID:     me,
-						LeaderCommit: ci,
-						PrevLogIndex: index - 1,
-						PrevLogTerm:  prevEntry.Term,
-					}
-
-					reply := &AppendEntriesReply{}
-					ctx, cancel := context.WithTimeout(ctx, HeartbeatInterval)
-					if !rf.sendAppendEntries(ctx, peer, args, reply) {
-						cancel()
-						continue
-					}
-					cancel()
-					replyCh <- reply
-				}
-			}(peer)
-		}
-
-		for reply := range replyCh {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-			}
-			if reply.Term > rf.Term() {
-				rf.BecomeFollower(reply.Term, -1)
-				rf.cancel()
-				return
-			}
+		if reply.Term > rf.Term() {
+			rf.BecomeFollower(reply.Term, -1)
+			rf.cancel()
+			return
 		}
 	}
 }
