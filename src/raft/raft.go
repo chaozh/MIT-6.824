@@ -340,8 +340,10 @@ func (rf *Raft) sendAppendEntries(ctx context.Context, server int, args *AppendE
 //
 func (rf *Raft) Start(command interface{}) (int, int, bool) {
 	// Your code here (2B).
-	term := rf.Term()
-	isLeader := rf.IsLeader()
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	term := rf.currentTerm
+	isLeader := rf.isLeader()
 	if !isLeader {
 		return -1, term, isLeader
 	}
@@ -351,8 +353,8 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 		Cmd:  command,
 	}
 
-	lastLogID := rf.AppendEntry(entry)
-	DPrintf("%d append entry, term: %d , cmd: %v, will be commited :%v, logs: %v", rf.Me(), rf.Term(), command, lastLogID, rf.logs)
+	lastLogID := rf.appendEntry(entry)
+	DPrintf("%d append entry, term: %d , cmd: %v, will be commited :%v, logs: %v", rf.me, rf.currentTerm, command, lastLogID, rf.logs)
 
 	/*
 		nc := rf.NewCommitted()
@@ -365,7 +367,7 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 				break
 			}
 		}*/
-	_, nextIndex := rf.LastLog()
+	_, nextIndex := rf.lastLog()
 	return nextIndex, term, isLeader
 }
 
