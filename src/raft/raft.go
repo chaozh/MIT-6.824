@@ -174,10 +174,12 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	reply.Term = term
 	if args.Term < term {
 		return
+	} else if args.Term > term {
+		rf.becomeFollower(args.Term, -1)
 	}
 
 	DPrintf("%d request vote, term: %d\n", args.CandidateID, args.Term)
-	DPrintf("%d has voted for %d, term: %d\n", rf.Me(), rf.votedFor, rf.currentTerm)
+	DPrintf("%d has voted for %d, term: %d\n", rf.me, rf.votedFor, rf.currentTerm)
 
 	if rf.votedFor != -1 && rf.votedFor != args.CandidateID && args.Term == term {
 		return
@@ -185,16 +187,16 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 
 	//index较大的，日志更新；同样index下，最后一条term较大的，日志更新；同样index和同样最后一条term情况下，日志更长的更新
 	lastLog, lastLogIndex := rf.lastLog()
-	if args.LastLogIndex < lastLogIndex {
+	if args.LastLogTerm < lastLog.Term {
 		return
-	} else if args.LastLogIndex == lastLogIndex {
-		if args.LastLogTerm < lastLog.Term {
+	} else if args.LastLogTerm == lastLog.Term {
+		if args.LastLogIndex < lastLogIndex {
 			return
 		}
 	}
 
-	rf.resetElectionDeadline()
 	rf.becomeFollower(args.Term, args.CandidateID)
+	rf.resetElectionDeadline()
 	reply.VoteGranted = true
 	return
 }
@@ -287,24 +289,25 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	if rf.isCandidate() {
 		rf.becomeFollower(args.Term, args.LeaderID)
 		rf.cancel()
+		return
 	}
 
 	// handle entries
 	prevEntry := rf.log(args.PrevLogIndex)
 	if prevEntry.Term != args.PrevLogTerm {
 		reply.Success = false
-	} else {
-		_, lastLogID := rf.lastLog()
-		if args.PrevLogIndex != lastLogID {
-			rf.truncateLog(args.PrevLogIndex)
-			DPrintf("%v truancate log to %v", rf.me, args.PrevLogIndex)
-		}
-
-		if len(args.Entries) > 0 {
-			rf.appendEntry(args.Entries...)
-		}
-		reply.Success = true
+		return
 	}
+	_, lastLogID := rf.lastLog()
+	if args.PrevLogIndex != lastLogID {
+		rf.truncateLog(args.PrevLogIndex)
+		DPrintf("%v truancate log to %v", rf.me, args.PrevLogIndex)
+	}
+
+	if len(args.Entries) > 0 {
+		rf.appendEntry(args.Entries...)
+	}
+	reply.Success = true
 
 	rf.maybeFollowerCommit(args.LeaderCommit)
 	rf.maybeApplyEntry()
@@ -455,8 +458,8 @@ func (rf *Raft) Wait4ElectionTimeout(ctx context.Context) error {
 				// election timeout fire
 				return nil
 			}
+			timer.Reset(rf.ElectionTimeout())
 		}
-		timer.Reset(rf.ElectionTimeout())
 	}
 }
 
@@ -500,24 +503,32 @@ func (rf *Raft) maybeApplyEntry() {
 		}
 
 		rf.newApplied <- applyMsg
+		DPrintf("%v new applied %v, logs: %v", rf.me, rf.lastApplied, rf.logs)
 	}
-	DPrintf("%v new applied %v, logs: %v", rf.me, rf.lastApplied, rf.logs)
 }
 
 func (rf *Raft) Me() int {
 	return rf.me
 }
 
+func (rf *Raft) term() int {
+	return rf.currentTerm
+}
+
 func (rf *Raft) Term() int {
 	rf.mu.RLock()
 	defer rf.mu.RUnlock()
-	return rf.currentTerm
+	return rf.term()
+}
+
+func (rf *Raft) setTerm(term int) {
+	rf.currentTerm = term
 }
 
 func (rf *Raft) SetTerm(term int) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
-	rf.currentTerm = term
+	rf.setTerm(term)
 }
 
 func (rf *Raft) LastLog() (LogEntry, int) {
@@ -999,8 +1010,8 @@ func Make(peers []*labrpc.ClientEnd, me int,
 
 	// startup as follower
 	rf.BecomeFollower(0, -1)
-	rf.ResetElectionDeadline()
 	rf.ResetElectionTimedout()
+	rf.ResetElectionDeadline()
 
 	go func() {
 		for {
