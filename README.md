@@ -9,7 +9,7 @@ MIT 6.824 课程的学习资料
 
 ## 视频 Videos
 
-[2015年lectures视频地址](https://www.youtube.com/playlist?list=PLkcQbKbegkMqiWf7nF8apfMRL4P4sw8UL)
+[2020年lectures视频地址](https://www.bilibili.com/video/av87684880)
 
 ## 讲座 Lectures
 
