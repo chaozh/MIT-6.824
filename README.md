@@ -1,7 +1,7 @@
 # MIT-6.824
 Basic Sources for MIT 6.824 Distributed Systems Class
 
-MIT 6.824 课程的学习资料
+MIT 6.824 课程的学习资料 代码更新为2021版
 
 ## 课程安排 Schedule
 
@@ -44,4 +44,4 @@ MIT 6.824 课程的学习资料
 ## 学习小组 Group
 
 mit6.824自学互助 QQ群：258537180(群已满)
-mit6.824自学互助二群 QQ群：682413790
+mit6.824自学互助二群 QQ群：682413790(群已满)

@@ -3,10 +3,10 @@ package raft
 import "log"
 
 // Debugging
-const Debug = 0
+const Debug = false
 
 func DPrintf(format string, a ...interface{}) (n int, err error) {
-	if Debug > 0 {
+	if Debug {
 		log.Printf(format, a...)
 	}
 	return

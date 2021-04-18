@@ -1,11 +1,17 @@
 package shardkv
 
+import "6.824/porcupine"
+import "6.824/models"
 import "testing"
 import "strconv"
 import "time"
 import "fmt"
 import "sync/atomic"
+import "sync"
 import "math/rand"
+import "io/ioutil"
+
+const linearizabilityCheckTimeout = 1 * time.Second
 
 func check(t *testing.T, ck *Clerk, key string, value string) {
 	v := ck.Get(key)
@@ -46,12 +52,16 @@ func TestStaticShards(t *testing.T) {
 	cfg.ShutdownGroup(1)
 	cfg.checklogs() // forbid snapshots
 
-	ch := make(chan bool)
+	ch := make(chan string)
 	for xi := 0; xi < n; xi++ {
 		ck1 := cfg.makeClient() // only one call allowed per client
 		go func(i int) {
-			defer func() { ch <- true }()
-			check(t, ck1, ka[i], va[i])
+			v := ck1.Get(ka[i])
+			if v != va[i] {
+				ch <- fmt.Sprintf("Get(%v): expected:\n%v\nreceived:\n%v", ka[i], va[i], v)
+			} else {
+				ch <- ""
+			}
 		}(xi)
 	}
 
@@ -60,7 +70,10 @@ func TestStaticShards(t *testing.T) {
 	done := false
 	for done == false {
 		select {
-		case <-ch:
+		case err := <-ch:
+			if err != "" {
+				t.Fatal(err)
+			}
 			ndone += 1
 		case <-time.After(time.Second * 2):
 			done = true
@@ -440,6 +453,74 @@ func TestConcurrent2(t *testing.T) {
 	fmt.Printf("  ... Passed\n")
 }
 
+func TestConcurrent3(t *testing.T) {
+	fmt.Printf("Test: concurrent configuration change and restart...\n")
+
+	cfg := make_config(t, 3, false, 300)
+	defer cfg.cleanup()
+
+	ck := cfg.makeClient()
+
+	cfg.join(0)
+
+	n := 10
+	ka := make([]string, n)
+	va := make([]string, n)
+	for i := 0; i < n; i++ {
+		ka[i] = strconv.Itoa(i)
+		va[i] = randstring(1)
+		ck.Put(ka[i], va[i])
+	}
+
+	var done int32
+	ch := make(chan bool)
+
+	ff := func(i int, ck1 *Clerk) {
+		defer func() { ch <- true }()
+		for atomic.LoadInt32(&done) == 0 {
+			x := randstring(1)
+			ck1.Append(ka[i], x)
+			va[i] += x
+		}
+	}
+
+	for i := 0; i < n; i++ {
+		ck1 := cfg.makeClient()
+		go ff(i, ck1)
+	}
+
+	t0 := time.Now()
+	for time.Since(t0) < 12*time.Second {
+		cfg.join(2)
+		cfg.join(1)
+		time.Sleep(time.Duration(rand.Int()%900) * time.Millisecond)
+		cfg.ShutdownGroup(0)
+		cfg.ShutdownGroup(1)
+		cfg.ShutdownGroup(2)
+		cfg.StartGroup(0)
+		cfg.StartGroup(1)
+		cfg.StartGroup(2)
+
+		time.Sleep(time.Duration(rand.Int()%900) * time.Millisecond)
+		cfg.leave(1)
+		cfg.leave(2)
+		time.Sleep(time.Duration(rand.Int()%900) * time.Millisecond)
+	}
+
+	time.Sleep(2 * time.Second)
+
+	atomic.StoreInt32(&done, 1)
+	for i := 0; i < n; i++ {
+		<-ch
+	}
+
+	for i := 0; i < n; i++ {
+		check(t, ck, ka[i], va[i])
+	}
+
+	fmt.Printf("  ... Passed\n")
+}
+
 func TestUnreliable1(t *testing.T) {
 	fmt.Printf("Test: unreliable 1...\n")
 
@@ -545,6 +626,111 @@ func TestUnreliable2(t *testing.T) {
 	fmt.Printf("  ... Passed\n")
 }
 
+func TestUnreliable3(t *testing.T) {
+	fmt.Printf("Test: unreliable 3...\n")
+
+	cfg := make_config(t, 3, true, 100)
+	defer cfg.cleanup()
+
+	begin := time.Now()
+	var operations []porcupine.Operation
+	var opMu sync.Mutex
+
+	ck := cfg.makeClient()
+
+	cfg.join(0)
+
+	n := 10
+	ka := make([]string, n)
+	va := make([]string, n)
+	for i := 0; i < n; i++ {
+		ka[i] = strconv.Itoa(i) // ensure multiple shards
+		va[i] = randstring(5)
+		start := int64(time.Since(begin))
+		ck.Put(ka[i], va[i])
+		end := int64(time.Since(begin))
+		inp := models.KvInput{Op: 1, Key: ka[i], Value: va[i]}
+		var out models.KvOutput
+		op := porcupine.Operation{Input: inp, Call: start, Output: out, Return: end, ClientId: 0}
+		operations = append(operations, op)
+	}
+
+	var done int32
+	ch := make(chan bool)
+
+	ff := func(i int) {
+		defer func() { ch <- true }()
+		ck1 := cfg.makeClient()
+		for atomic.LoadInt32(&done) == 0 {
+			ki := rand.Int() % n
+			nv := randstring(5)
+			var inp models.KvInput
+			var out models.KvOutput
+			start := int64(time.Since(begin))
+			if (rand.Int() % 1000) < 500 {
+				ck1.Append(ka[ki], nv)
+				inp = models.KvInput{Op: 2, Key: ka[ki], Value: nv}
+			} else if (rand.Int() % 1000) < 100 {
+				ck1.Put(ka[ki], nv)
+				inp = models.KvInput{Op: 1, Key: ka[ki], Value: nv}
+			} else {
+				v := ck1.Get(ka[ki])
+				inp = models.KvInput{Op: 0, Key: ka[ki]}
+				out = models.KvOutput{Value: v}
+			}
+			end := int64(time.Since(begin))
+			op := porcupine.Operation{Input: inp, Call: start, Output: out, Return: end, ClientId: i}
+			opMu.Lock()
+			operations = append(operations, op)
+			opMu.Unlock()
+		}
+	}
+
+	for i := 0; i < n; i++ {
+		go ff(i)
+	}
+
+	time.Sleep(150 * time.Millisecond)
+	cfg.join(1)
+	time.Sleep(500 * time.Millisecond)
+	cfg.join(2)
+	time.Sleep(500 * time.Millisecond)
+	cfg.leave(0)
+	time.Sleep(500 * time.Millisecond)
+	cfg.leave(1)
+	time.Sleep(500 * time.Millisecond)
+	cfg.join(1)
+	cfg.join(0)
+
+	time.Sleep(2 * time.Second)
+
+	atomic.StoreInt32(&done, 1)
+	cfg.net.Reliable(true)
+	for i := 0; i < n; i++ {
+		<-ch
+	}
+
+	res, info := porcupine.CheckOperationsVerbose(models.KvModel, operations, linearizabilityCheckTimeout)
+	if res == porcupine.Illegal {
+		file, err := ioutil.TempFile("", "*.html")
+		if err != nil {
+			fmt.Printf("info: failed to create temp file for visualization")
+		} else {
+			err = porcupine.Visualize(models.KvModel, info, file)
+			if err != nil {
+				fmt.Printf("info: failed to write history visualization to %s\n", file.Name())
+			} else {
+				fmt.Printf("info: wrote history visualization to %s\n", file.Name())
+			}
+		}
+		t.Fatal("history is not linearizable")
+	} else if res == porcupine.Unknown {
+		fmt.Println("info: linearizability check timed out, assuming history is ok")
+	}
+
+	fmt.Printf("  ... Passed\n")
+}
+
 //
 // optional test to see whether servers are deleting
 // shards for which they are no longer responsible.
@@ -621,74 +807,6 @@ func TestChallenge1Delete(t *testing.T) {
 	expected := 3 * (((n - 3) * 1000) + 2*3*1000 + 6000)
 	if total > expected {
 		t.Fatalf("snapshot + persisted Raft state are too big: %v > %v\n", total, expected)
-	}
-
-	for i := 0; i < n; i++ {
-		check(t, ck, ka[i], va[i])
-	}
-
-	fmt.Printf("  ... Passed\n")
-}
-
-func TestChallenge1Concurrent(t *testing.T) {
-	fmt.Printf("Test: concurrent configuration change and restart (challenge 1)...\n")
-
-	cfg := make_config(t, 3, false, 300)
-	defer cfg.cleanup()
-
-	ck := cfg.makeClient()
-
-	cfg.join(0)
-
-	n := 10
-	ka := make([]string, n)
-	va := make([]string, n)
-	for i := 0; i < n; i++ {
-		ka[i] = strconv.Itoa(i)
-		va[i] = randstring(1)
-		ck.Put(ka[i], va[i])
-	}
-
-	var done int32
-	ch := make(chan bool)
-
-	ff := func(i int, ck1 *Clerk) {
-		defer func() { ch <- true }()
-		for atomic.LoadInt32(&done) == 0 {
-			x := randstring(1)
-			ck1.Append(ka[i], x)
-			va[i] += x
-		}
-	}
-
-	for i := 0; i < n; i++ {
-		ck1 := cfg.makeClient()
-		go ff(i, ck1)
-	}
-
-	t0 := time.Now()
-	for time.Since(t0) < 12*time.Second {
-		cfg.join(2)
-		cfg.join(1)
-		time.Sleep(time.Duration(rand.Int()%900) * time.Millisecond)
-		cfg.ShutdownGroup(0)
-		cfg.ShutdownGroup(1)
-		cfg.ShutdownGroup(2)
-		cfg.StartGroup(0)
-		cfg.StartGroup(1)
-		cfg.StartGroup(2)
-
-		time.Sleep(time.Duration(rand.Int()%900) * time.Millisecond)
-		cfg.leave(1)
-		cfg.leave(2)
-		time.Sleep(time.Duration(rand.Int()%900) * time.Millisecond)
-	}
-
-	time.Sleep(2 * time.Second)
-
-	atomic.StoreInt32(&done, 1)
-	for i := 0; i < n; i++ {
-		<-ch
 	}
 
 	for i := 0; i < n; i++ {
