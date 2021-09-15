@@ -44,7 +44,9 @@ func (c *Coordinator) server() {
 //
 // main/mrcoordinator.go calls Done() periodically to find out
 // if the entire job has finished.
-//
+
+// main/mrcoordinator.go expects mr/coordinator.go to implement a Done() method that returns true 
+//when the MapReduce job is completely finished; at that point, mrcoordinator.go will exit.
 func (c *Coordinator) Done() bool {
 	ret := false
 
