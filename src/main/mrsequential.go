@@ -35,7 +35,7 @@ func main() {
 	// pass it to Map,
 	// accumulate the intermediate Map output.
 	//
-	intermediate := []mr.KeyValue{}
+	intermediate := []mr.KeyValue{}//这里语法什么意思？mr.KeyValue{}
 	for _, filename := range os.Args[2:] {
 		file, err := os.Open(filename)
 		if err != nil {
@@ -47,7 +47,7 @@ func main() {
 		}
 		file.Close()
 		kva := mapf(filename, string(content))
-		intermediate = append(intermediate, kva...)
+		intermediate = append(intermediate, kva...)//append使用方法。
 	}
 
 	//
@@ -56,10 +56,10 @@ func main() {
 	// rather than being partitioned into NxM buckets.
 	//
 
-	sort.Sort(ByKey(intermediate))
+	sort.Sort(ByKey(intermediate)) //这里是按照key sort吗？
 
 	oname := "mr-out-0"
-	ofile, _ := os.Create(oname)
+	ofile, _ := os.Create(oname) //这里是创建文件。
 
 	//
 	// call Reduce on each distinct key in intermediate[],
@@ -75,7 +75,7 @@ func main() {
 		for k := i; k < j; k++ {
 			values = append(values, intermediate[k].Value)
 		}
-		output := reducef(intermediate[i].Key, values)
+		output := reducef(intermediate[i].Key, values)  //按照reduce处理。
 
 		// this is the correct format for each line of Reduce output.
 		fmt.Fprintf(ofile, "%v %v\n", intermediate[i].Key, output)
