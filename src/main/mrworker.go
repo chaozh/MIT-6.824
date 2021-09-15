@@ -24,7 +24,7 @@ func main() {
 
 	mapf, reducef := loadPlugin(os.Args[1])
 
-	mr.Worker(mapf, reducef)
+	mr.Worker(mapf, reducef)//将得到的map和reduce传入。worker中。
 }
 
 //
