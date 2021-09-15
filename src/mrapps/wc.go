@@ -4,7 +4,8 @@ package main
 // a word-count application "plugin" for MapReduce.
 //
 // go build -buildmode=plugin wc.go
-//
+// 这个文件是由 使用者来编写
+
 
 import "6.824/mr"
 import "unicode"
