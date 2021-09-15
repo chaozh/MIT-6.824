@@ -22,7 +22,7 @@ func main() {
 
 	m := mr.MakeCoordinator(os.Args[1:], 10)
 	for m.Done() == false {
-		time.Sleep(time.Second)
+		time.Sleep(time.Second)//他为什么要time sleep？
 	}
 
 	time.Sleep(time.Second)
