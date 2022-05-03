@@ -42,7 +42,7 @@ type Coordinator struct {
 	wait        sync.WaitGroup
 	mux         sync.Mutex
 	workerSeq   int
-	taskCh      chan Task
+	taskCh      chan Task //当消息队列用了
 	done        bool
 }
 
@@ -58,16 +58,13 @@ func (c *Coordinator) newTask(taskseq int) Task {
 	if task.Phase == MapPhase {
 		task.FileName = c.files[taskseq]
 	}
-	if c.done {
-		task.Alive = false
-	}
 	return task
 }
 
 func (c *Coordinator) taskInstance(t Task, ctx context.Context) {
-	select {
+	select { //直到有信号量传入或超时时执行相应的操作
 	case <-ctx.Done():
-		c.taskCh <- t
+		c.taskCh <- t //将任务重新传入任务队列
 	case msg := <-c.taskContext[t.Sequence].msg:
 		switch msg {
 		case TaskMsgFinish:
@@ -78,6 +75,7 @@ func (c *Coordinator) taskInstance(t Task, ctx context.Context) {
 	}
 }
 
+//创建一个goroutine对任务状态进行监控
 func (c *Coordinator) newTaskInstance(t Task) {
 	ctx, cancle := context.WithTimeout(context.Background(), MaxTaskRunTime)
 	go func() {
@@ -86,10 +84,12 @@ func (c *Coordinator) newTaskInstance(t Task) {
 	}()
 }
 
+//初始化Map任务
 func (c *Coordinator) initMapTasks() {
 	c.initTasks(len(c.files))
 }
 
+//初始化Reduce任务
 func (c *Coordinator) initReduceTasks() {
 	c.initTasks(c.nReduce)
 }
@@ -106,6 +106,7 @@ func (c *Coordinator) initTasks(tasknum int) {
 	go c.waitDone()
 }
 
+//当一个阶段的所有任务完成后执行下一步
 func (c *Coordinator) waitDone() {
 	c.wait.Wait()
 	switch c.phase {
@@ -136,7 +137,7 @@ func (c *Coordinator) Task(args *TaskArgs, reply *TaskReply) error {
 		}
 		return nil
 	}
-	task := <-c.taskCh
+	task := <-c.taskCh //任务分配完了会阻塞
 	reply.Task = &task
 	c.taskContext[task.Sequence].worker = args.WorkerID
 	c.newTaskInstance(task)
