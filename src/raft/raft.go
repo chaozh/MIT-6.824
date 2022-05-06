@@ -597,14 +597,6 @@ func (rf *Raft) apply() {
 		rf.applyCh <- msg
 	}
 }
-func (rf *Raft) applyer() {
-	for !rf.killed() {
-		select {
-		default:
-			time.Sleep(time.Millisecond * 100)
-		}
-	}
-}
 
 //
 // the service or tester wants to create a Raft server. the ports
@@ -646,7 +638,6 @@ func Make(peers []*labrpc.ClientEnd, me int,
 
 	// start ticker goroutine to start elections
 	go rf.ticker()
-	go rf.applyer()
 
 	return rf
 }
