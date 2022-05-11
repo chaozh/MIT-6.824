@@ -27,7 +27,7 @@ func (e *LogEntry) String() string {
 }
 
 func (l *LogEntries) Len() int {
-	return len(l.LogEntries)
+	return l.Index0 + len(l.LogEntries)
 }
 
 func (l *LogEntries) Append(e ...LogEntry) {
@@ -35,19 +35,39 @@ func (l *LogEntries) Append(e ...LogEntry) {
 }
 
 func (l *LogEntries) Truncate(i int) {
-	l.LogEntries = l.LogEntries[:i]
+	l.LogEntries = l.LogEntries[:i-l.Index0]
 }
 
 func (l *LogEntries) Slice(i int) []LogEntry {
-	return l.LogEntries[i:]
+	return l.LogEntries[i-l.Index0:]
 }
 
 func (l *LogEntries) Get(i int) LogEntry {
-	return l.LogEntries[i]
+	if i < l.Index0 {
+		DPrintf("ERROR: index smaller than log snapshot!i: %d, Index0: %d\n", i, l.Index0)
+		panic("ERROR: index smaller than log snapshot!\n")
+	} else if i > l.Index0+len(l.LogEntries) {
+		panic("ERROR: index bigger than log entries!\n")
+	}
+	return l.LogEntries[i-l.Index0]
 }
 
 func (l *LogEntries) Set(i int, e LogEntry) {
-	l.LogEntries[i] = e
+	if i < l.Index0 {
+		DPrintf("ERROR: index smaller than log snapshot!i: %d, Index0: %d\n", i, l.Index0)
+		panic("ERROR: index smaller than log snapshot!\n")
+	} else if i > l.Index0+len(l.LogEntries) {
+		DPrintf("ERROR: index bigger than log entries!\n")
+		panic("ERROR: index bigger than log entries!\n")
+	}
+	l.LogEntries[i-l.Index0] = e
+}
+
+func (l *LogEntries) Discard(i int) {
+	DPrintf("discard(%d),Index0: %d,len of entries: %d\n", i, l.Index0, len(l.LogEntries))
+	l.LogEntries = append([]LogEntry{}, l.LogEntries[i-l.Index0:]...)
+	l.Index0 = i
+	DPrintf("discard(%d) done,Index0: %d,len of entries: %d\n", i, l.Index0, len(l.LogEntries))
 }
 
 func (l *LogEntries) GetLastIndex() int {
@@ -55,7 +75,7 @@ func (l *LogEntries) GetLastIndex() int {
 }
 
 func (l *LogEntries) GetLastLog() LogEntry {
-	return l.LogEntries[l.Len()-1]
+	return l.LogEntries[len(l.LogEntries)-1]
 }
 
 func (l *LogEntries) String() string {
