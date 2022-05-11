@@ -15,6 +15,10 @@ type LogEntry struct {
 	Command interface{}
 }
 
+// LogEntries[1] is the first entry in the log.
+// LogEntries[0] saves the snapshot's meta,when there's no snapshot,it's nil.
+// Once start to append log entries, the log entries will be saved in LogEntries[1:].
+// Index0 is the same as lastIncludedIndex meaning in the raft paper.
 func newLogEntries() LogEntries {
 	return LogEntries{
 		LogEntries: make([]LogEntry, 1),
@@ -38,6 +42,7 @@ func (l *LogEntries) Truncate(i int) {
 	l.LogEntries = l.LogEntries[:i-l.Index0]
 }
 
+//Get the log entries between [i:]
 func (l *LogEntries) Slice(i int) []LogEntry {
 	return l.LogEntries[i-l.Index0:]
 }
@@ -63,6 +68,7 @@ func (l *LogEntries) Set(i int, e LogEntry) {
 	l.LogEntries[i-l.Index0] = e
 }
 
+//Discard the log entries before index.
 func (l *LogEntries) Discard(i int) {
 	DPrintf("discard(%d),Index0: %d,len of entries: %d\n", i, l.Index0, len(l.LogEntries))
 	l.LogEntries = append([]LogEntry{}, l.LogEntries[i-l.Index0:]...)

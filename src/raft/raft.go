@@ -422,7 +422,8 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesRes) 
 		reply.XLen = rf.logs.Len()
 		return
 	}
-	//Out of date
+	//entry in args.PrevLogIndex has been snapshotted in follower
+	//it means that this AppendEntriesRPC is out of date
 	if args.PrevLogIndex < rf.logs.Index0 {
 		reply.XIndex = -1
 		reply.XTerm = -1
@@ -573,9 +574,9 @@ func (rf *Raft) startElection() {
 	//DPrintf("%d: election finished, term %d,voteCount:%d\n", me, rf.currentTerm, voteCount)
 }
 
-func (rf *Raft) sendElection(i int, args RequestVoteArgs, voteCount *int32) {
+func (rf *Raft) sendElection(server int, args RequestVoteArgs, voteCount *int32) {
 	reply := RequestVoteReply{}
-	if ok := rf.sendRequestVote(i, &args, &reply); !ok {
+	if ok := rf.sendRequestVote(server, &args, &reply); !ok {
 		return
 	}
 	rf.mu.Lock()
@@ -617,6 +618,8 @@ func (rf *Raft) startAppend(heartbeat bool) {
 			if rf.logs.Len() < nextIndex {
 				nextIndex = rf.logs.Len()
 			}
+			// when nextIndex less than rf.logs.Index0 , it means that the entry has been snapshotted.
+			// send InstallSnapshotRequest instead of AppendEntriesRequest.
 			if nextIndex-1 < rf.logs.Index0 {
 				DPrintf("%d: nextIndex %d is less than logs.Index0 %d\n", rf.me, nextIndex, rf.logs.Index0)
 				DPrintf("%d: send InstallSnapshot to %d, term %d, nextIndex %d\n", rf.me, i, rf.currentTerm, nextIndex)
@@ -644,9 +647,9 @@ func (rf *Raft) startAppend(heartbeat bool) {
 	}
 }
 
-func (rf *Raft) sendEntries(i int, args AppendEntriesArgs) {
+func (rf *Raft) sendEntries(server int, args AppendEntriesArgs) {
 	reply := AppendEntriesRes{}
-	if ok := rf.sendAppendEntries(i, &args, &reply); !ok {
+	if ok := rf.sendAppendEntries(server, &args, &reply); !ok {
 		//DPrintf("%d: send heartbeat to %d failed", rf.me, i)
 		return
 	}
@@ -662,21 +665,21 @@ func (rf *Raft) sendEntries(i int, args AppendEntriesArgs) {
 		return
 	}
 	if reply.Success {
-		rf.matchIndex[i] = Max(args.PrevLogIndex+len(args.Entries), rf.matchIndex[i])
-		rf.nextIndex[i] = Max(args.PrevLogIndex+len(args.Entries)+1, rf.nextIndex[i])
-		DPrintf("%d: append to %d success, term %d, nextIndex %d ,args: %v\n", rf.me, i, rf.currentTerm, rf.nextIndex[i], args)
+		rf.matchIndex[server] = Max(args.PrevLogIndex+len(args.Entries), rf.matchIndex[server])
+		rf.nextIndex[server] = Max(args.PrevLogIndex+len(args.Entries)+1, rf.nextIndex[server])
+		DPrintf("%d: append to %d success, term %d, nextIndex %d ,args: %v\n", rf.me, server, rf.currentTerm, rf.nextIndex[server], args)
 		rf.checkCommit()
 		return
 	}
-	DPrintf("%d: append to %d failed, term %d, nextIndex %d\n", rf.me, i, rf.currentTerm, rf.nextIndex[i])
+	DPrintf("%d: append to %d failed, term %d, nextIndex %d\n", rf.me, server, rf.currentTerm, rf.nextIndex[server])
 	if reply.XTerm == -1 {
-		rf.nextIndex[i] = reply.XLen
+		rf.nextIndex[server] = reply.XLen
 	} else {
 		lastLogInXTerm := rf.findLastLogIndexWithTerm(reply.XTerm)
 		if lastLogInXTerm > 0 {
-			rf.nextIndex[i] = lastLogInXTerm
+			rf.nextIndex[server] = lastLogInXTerm
 		} else {
-			rf.nextIndex[i] = reply.XIndex
+			rf.nextIndex[server] = reply.XIndex
 		}
 	}
 }
