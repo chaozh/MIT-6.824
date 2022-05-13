@@ -1,16 +1,19 @@
 package kvraft
 
-import "6.824/porcupine"
-import "6.824/models"
-import "testing"
-import "strconv"
-import "time"
-import "math/rand"
-import "strings"
-import "sync"
-import "sync/atomic"
-import "fmt"
-import "io/ioutil"
+import (
+	"fmt"
+	"io/ioutil"
+	"math/rand"
+	"strconv"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"testing"
+	"time"
+
+	"6.824/models"
+	"6.824/porcupine"
+)
 
 // The tester generously allows solutions to complete elections in one second
 // (much more than the paper's range of timeouts).
@@ -482,13 +485,17 @@ func TestOnePartition3A(t *testing.T) {
 
 	p1, p2 := cfg.make_partition()
 	cfg.partition(p1, p2)
+	DPrintf("Test: partitioned ... %v,%v\n", p1, p2)
 
 	ckp1 := cfg.makeClient(p1)  // connect ckp1 to p1
 	ckp2a := cfg.makeClient(p2) // connect ckp2a to p2
 	ckp2b := cfg.makeClient(p2) // connect ckp2b to p2
+	DPrintf("Test: clients made ...\n")
 
 	Put(cfg, ckp1, "1", "14", nil, -1)
+	DPrintf("Test: PUT to ckp1 ...\n")
 	check(cfg, t, ckp1, "1", "14")
+	DPrintf("Test: checked ckp1 ...\n")
 
 	cfg.end()
 
@@ -516,6 +523,7 @@ func TestOnePartition3A(t *testing.T) {
 	check(cfg, t, ckp1, "1", "14")
 	Put(cfg, ckp1, "1", "16", nil, -1)
 	check(cfg, t, ckp1, "1", "16")
+	DPrintf("Test: checked ckp1 ...\n")
 
 	cfg.end()
 
@@ -529,12 +537,14 @@ func TestOnePartition3A(t *testing.T) {
 
 	select {
 	case <-done0:
+		DPrintf("Test: Put done0 ...\n")
 	case <-time.After(30 * 100 * time.Millisecond):
 		t.Fatalf("Put did not complete")
 	}
 
 	select {
 	case <-done1:
+		DPrintf("Test: Get done1 ...\n")
 	case <-time.After(30 * 100 * time.Millisecond):
 		t.Fatalf("Get did not complete")
 	default:

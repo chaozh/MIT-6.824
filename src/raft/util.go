@@ -2,14 +2,16 @@ package raft
 
 import (
 	"log"
+	"strings"
 )
 
 // Debugging
 const Debug = false
 
 func DPrintf(format string, a ...interface{}) (n int, err error) {
+	str := strings.Join([]string{"[raft]:", format}, "")
 	if Debug {
-		log.Printf(format, a...)
+		log.Printf(str, a...)
 	}
 	return
 }
