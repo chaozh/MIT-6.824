@@ -319,13 +319,13 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	}
 	// All servers Rule 2
 	if args.Term > rf.currentTerm {
+		rf.updatetime = true
 		DPrintf("[%d]: RequestVote: term is too old", rf.me)
 		rf.currentTerm = args.Term
 		rf.role = FollowerRole
 		rf.votedFor = -1
 		rf.persist()
 	}
-	rf.updatetime = true
 	// Rule 2
 	if rf.votedFor == -1 || rf.votedFor == args.CandidateID {
 		currentLogIndex := rf.logs.GetLastIndex()
@@ -423,6 +423,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesRes) 
 	DPrintf("[%d]: AppendEntries: args.PrevLogIndex: %d, args.PrevLogTerm: %d", rf.me, args.PrevLogIndex, args.PrevLogTerm)
 	//Rule 2
 	if rf.logs.GetLastIndex() < args.PrevLogIndex {
+		DPrintf("[%d]: AppendEntries: log is too short", rf.me)
 		reply.XIndex = -1
 		reply.XTerm = -1
 		reply.XLen = rf.logs.Len()
@@ -431,6 +432,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesRes) 
 	//entry in args.PrevLogIndex has been snapshotted in follower
 	//it means that this AppendEntriesRPC is out of date
 	if args.PrevLogIndex < rf.logs.Index0 {
+		DPrintf("[%d]: AppendEntries: log is out of date", rf.me)
 		reply.XIndex = -1
 		reply.XTerm = -1
 		reply.XLen = rf.logs.Len()
@@ -598,9 +600,12 @@ func (rf *Raft) sendElection(server int, args RequestVoteArgs, voteCount *int32)
 			rf.currentTerm = reply.Term
 			rf.votedFor = -1
 			rf.persist()
+			return
 		}
+		DPrintf("[%d]: election not get vote, term %d, voteCount %d\n", rf.me, rf.currentTerm, *voteCount)
 		return
 	}
+	DPrintf("[%d]: election get vote, term %d, voteCount %d\n", rf.me, rf.currentTerm, *voteCount)
 	atomic.AddInt32(voteCount, -1)
 	if atomic.LoadInt32(voteCount) == 0 && rf.role == CandidateRole {
 		rf.role = LeaderRole
@@ -779,7 +784,6 @@ func Make(peers []*labrpc.ClientEnd, me int,
 		rf.nextIndex[i] = 1
 		rf.matchIndex[i] = 0
 	}
-	rf.currentTerm = rf.logs.GetLastLog().Term
 	rf.commitIndex = 0
 	rf.role = FollowerRole
 	rf.updatetime = false
@@ -791,6 +795,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	rf.readPersist(persister.ReadRaftState())
 
 	rf.lastApplied = rf.logs.Index0
+	rf.currentTerm = rf.logs.GetLastLog().Term
 
 	// start ticker goroutine to start elections
 	go rf.ticker()

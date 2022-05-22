@@ -4,8 +4,6 @@ const (
 	OK             = "OK"
 	ErrNoKey       = "ErrNoKey"
 	ErrWrongLeader = "ErrWrongLeader"
-	ErrSeqNotMatch = "ErrSeqNotMatch"
-	ErrDuplicate   = "ErrDuplicate"
 )
 
 type Err string

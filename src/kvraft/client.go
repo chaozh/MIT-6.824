@@ -72,7 +72,6 @@ func (ck *Clerk) Get(key string) string {
 			return ""
 		}
 		server = int(nrand()) % len(ck.servers)
-		time.Sleep(RetryTime)
 	}
 }
 
@@ -103,7 +102,6 @@ func (ck *Clerk) PutAppend(key string, value string, op string) {
 			DPrintf("Client PutAppend: ErrWrongLeader %s->'%s',%s, server: %v", key, value, reply.Err, server)
 			server = int(nrand()) % len(ck.servers)
 		}
-		time.Sleep(RetryTime)
 	}
 }
 

@@ -1,0 +1,948 @@
+2022/05/21 03:32:56 [raft]:0: init
+2022/05/21 03:32:56 [raft]:0: init done
+2022/05/21 03:32:56 [shardctrler]:0: Started...
+2022/05/21 03:32:56 [raft]:1: init
+2022/05/21 03:32:56 [raft]:1: init done
+2022/05/21 03:32:56 [shardctrler]:1: Started...
+2022/05/21 03:32:56 [raft]:2: init
+2022/05/21 03:32:56 [raft]:2: init done
+2022/05/21 03:32:56 [shardctrler]:2: Started...
+Test: Basic leave/join ...
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [raft]:[1]: start a new election, term 1, voteCount 2
+2022/05/21 03:32:56 [raft]:[2]: start a new election, term 1, voteCount 2
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [raft]:[0]: RequestVote: term is too old
+2022/05/21 03:32:56 [raft]:[2]: persist
+2022/05/21 03:32:56 [raft]:[0]: persist
+2022/05/21 03:32:56 [raft]:[0]: persist
+2022/05/21 03:32:56 [raft]:[1]: persist
+2022/05/21 03:32:56 [raft]:[1]: election get vote, term 1, voteCount 1
+2022/05/21 03:32:56 [raft]:[1]: nextIndex[0]: = 1
+2022/05/21 03:32:56 [raft]:[1]: nextIndex[1]: = 1
+2022/05/21 03:32:56 [raft]:[1]: nextIndex[2]: = 1
+2022/05/21 03:32:56 [raft]:[1]: become leader, term 1
+2022/05/21 03:32:56 [raft]:[1]: start to append logs, term 1
+2022/05/21 03:32:56 [raft]:[1]: send append to 0, term 1, nextIndex 1
+2022/05/21 03:32:56 [raft]:[1]: send append to 2, term 1, nextIndex 1
+2022/05/21 03:32:56 [raft]:[2]: election not get vote, term 1, voteCount 1
+2022/05/21 03:32:56 [raft]:[0]: persist
+2022/05/21 03:32:56 [raft]:[1]: election not get vote, term 1, voteCount 0
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1}
+2022/05/21 03:32:56 [raft]:[2]: election not get vote, term 1, voteCount 1
+2022/05/21 03:32:56 [raft]:[2]: persist
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries: args.PrevLogIndex: 0, args.PrevLogTerm: 0
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries: args.PrevLogIndex: 0, args.PrevLogTerm: 0
+2022/05/21 03:32:56 [raft]:[1]: persist
+2022/05/21 03:32:56 [raft]:[1]: start to append logs, term 1
+2022/05/21 03:32:56 [raft]:[1]: send append to 0, term 1, nextIndex 1
+2022/05/21 03:32:56 [raft]:[1]: send append to 2, term 1, nextIndex 1
+2022/05/21 03:32:56 [raft]:[1]: Start({Query <nil> <nil> <nil> 0xc0003ca108 2922876929404508081 1}) index:1, term:1
+2022/05/21 03:32:56 [shardctrler]:1: SendOperation:Query,index:1
+2022/05/21 03:32:56 [raft]:[1]: append to 2 success, term 1, nextIndex 1 ,args: {1 1 0 0 [] 0}
+2022/05/21 03:32:56 [raft]:[1]: append to 0 success, term 1, nextIndex 1 ,args: {1 1 0 0 [] 0}
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries: args.PrevLogIndex: 0, args.PrevLogTerm: 0
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries: args.PrevLogIndex: 0, args.PrevLogTerm: 0
+2022/05/21 03:32:56 [raft]:[2]: persist
+2022/05/21 03:32:56 [raft]:[0]: persist
+2022/05/21 03:32:56 [raft]:[1]: append to 2 success, term 1, nextIndex 2 ,args: {1 1 0 0 [{1 {Query <nil> <nil> <nil> 0xc0003ca108 2922876929404508081 1}}] 0}
+2022/05/21 03:32:56 [raft]:[1]: commit to 1, term 1
+2022/05/21 03:32:56 [raft]:[1]: append to 0 success, term 1, nextIndex 2 ,args: {1 1 0 0 [{1 {Query <nil> <nil> <nil> 0xc0003ca108 2922876929404508081 1}}] 0}
+2022/05/21 03:32:56 [raft]:[1]: apply 1,{true {Query <nil> <nil> <nil> 0xc0003ca108 2922876929404508081 1} 1 false [] 0 0}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 1},reply:&{false OK {0 [0 0 0 0 0 0 0 0 0 0] map[]}},
+[{0 [0 0 0 0 0 0 0 0 0 0] map[]}]
+2022/05/21 03:32:56 [shardctrler]:Query Config: {0 [0 0 0 0 0 0 0 0 0 0] map[]},seq: 1
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 2}
+2022/05/21 03:32:56 [raft]:[1]: persist
+2022/05/21 03:32:56 [raft]:[1]: start to append logs, term 1
+2022/05/21 03:32:56 [raft]:[1]: send append to 0, term 1, nextIndex 2
+2022/05/21 03:32:56 [raft]:[1]: send append to 2, term 1, nextIndex 2
+2022/05/21 03:32:56 [raft]:[1]: Start({Query <nil> <nil> <nil> 0xc0003ca138 2922876929404508081 2}) index:2, term:1
+2022/05/21 03:32:56 [shardctrler]:1: SendOperation:Query,index:2
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries: args.PrevLogIndex: 1, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries: args.PrevLogIndex: 1, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[2]: persist
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries update commitIndex: args.LeaderCommit: 1, rf.commitIndex: 0
+2022/05/21 03:32:56 [raft]:[0]: persist
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries update commitIndex: args.LeaderCommit: 1, rf.commitIndex: 0
+2022/05/21 03:32:56 [raft]:[2]: apply 1,{true {Query <nil> <nil> <nil> 0xc0001ee270 2922876929404508081 1} 1 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[0]: apply 1,{true {Query <nil> <nil> <nil> 0xc00001a3c0 2922876929404508081 1} 1 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[1]: append to 2 success, term 1, nextIndex 3 ,args: {1 1 1 1 [{1 {Query <nil> <nil> <nil> 0xc0003ca138 2922876929404508081 2}}] 1}
+2022/05/21 03:32:56 [raft]:[1]: commit to 2, term 1
+2022/05/21 03:32:56 [raft]:[1]: apply 2,{true {Query <nil> <nil> <nil> 0xc0003ca138 2922876929404508081 2} 2 false [] 0 0}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 2},reply:&{false OK {0 [0 0 0 0 0 0 0 0 0 0] map[]}},
+[{0 [0 0 0 0 0 0 0 0 0 0] map[]}]
+2022/05/21 03:32:56 [raft]:[1]: append to 0 success, term 1, nextIndex 3 ,args: {1 1 1 1 [{1 {Query <nil> <nil> <nil> 0xc0003ca138 2922876929404508081 2}}] 1}
+2022/05/21 03:32:56 [shardctrler]:Query Config: {0 [0 0 0 0 0 0 0 0 0 0] map[]},seq: 2
+2022/05/21 03:32:56 [shardctrler]:1: Join:&{map[1:[x y z]] 2922876929404508081 3}
+2022/05/21 03:32:56 [raft]:[1]: persist
+2022/05/21 03:32:56 [raft]:[1]: start to append logs, term 1
+2022/05/21 03:32:56 [raft]:[1]: send append to 0, term 1, nextIndex 3
+2022/05/21 03:32:56 [raft]:[1]: send append to 2, term 1, nextIndex 3
+2022/05/21 03:32:56 [raft]:[1]: Start({Join 0xc00035f1a0 <nil> <nil> <nil> 2922876929404508081 3}) index:3, term:1
+2022/05/21 03:32:56 [shardctrler]:1: SendOperation:Join,index:3
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries: args.PrevLogIndex: 2, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries: args.PrevLogIndex: 2, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[2]: persist
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries update commitIndex: args.LeaderCommit: 2, rf.commitIndex: 1
+2022/05/21 03:32:56 [raft]:[0]: persist
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries update commitIndex: args.LeaderCommit: 2, rf.commitIndex: 1
+2022/05/21 03:32:56 [raft]:[2]: apply 2,{true {Query <nil> <nil> <nil> 0xc0001ee2d0 2922876929404508081 2} 2 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[0]: apply 2,{true {Query <nil> <nil> <nil> 0xc00035c138 2922876929404508081 2} 2 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[1]: append to 2 success, term 1, nextIndex 4 ,args: {1 1 2 1 [{1 {Join 0xc00035f1a0 <nil> <nil> <nil> 2922876929404508081 3}}] 2}
+2022/05/21 03:32:56 [raft]:[1]: commit to 3, term 1
+2022/05/21 03:32:56 [raft]:[1]: append to 0 success, term 1, nextIndex 4 ,args: {1 1 2 1 [{1 {Join 0xc00035f1a0 <nil> <nil> <nil> 2922876929404508081 3}}] 2}
+2022/05/21 03:32:56 [raft]:[1]: apply 3,{true {Join 0xc00035f1a0 <nil> <nil> <nil> 2922876929404508081 3} 3 false [] 0 0}
+2022/05/21 03:32:56 [shardctrler]:1: applier Join:map[1:[x y z]]
+2022/05/21 03:32:56 [shardctrler]:rebalance:[1]
+2022/05/21 03:32:56 [shardctrler]:rebalance done:map[1:[0 1 2 3 4 5 6 7 8 9]]
+2022/05/21 03:32:56 [shardctrler]:1: applier Join:map[1:[x y z]],oldcfg:{0 [0 0 0 0 0 0 0 0 0 0] map[]},newcfg:{1 [1 1 1 1 1 1 1 1 1 1] map[1:[x y z]]}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 4}
+2022/05/21 03:32:56 [raft]:[1]: persist
+2022/05/21 03:32:56 [raft]:[1]: start to append logs, term 1
+2022/05/21 03:32:56 [raft]:[1]: send append to 0, term 1, nextIndex 4
+2022/05/21 03:32:56 [raft]:[1]: send append to 2, term 1, nextIndex 4
+2022/05/21 03:32:56 [raft]:[1]: Start({Query <nil> <nil> <nil> 0xc00001a4c8 2922876929404508081 4}) index:4, term:1
+2022/05/21 03:32:56 [shardctrler]:1: SendOperation:Query,index:4
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries: args.PrevLogIndex: 3, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries: args.PrevLogIndex: 3, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[0]: persist
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries update commitIndex: args.LeaderCommit: 3, rf.commitIndex: 2
+2022/05/21 03:32:56 [raft]:[2]: persist
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries update commitIndex: args.LeaderCommit: 3, rf.commitIndex: 2
+2022/05/21 03:32:56 [raft]:[0]: apply 3,{true {Join 0xc00030a270 <nil> <nil> <nil> 2922876929404508081 3} 3 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[2]: apply 3,{true {Join 0xc000488228 <nil> <nil> <nil> 2922876929404508081 3} 3 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[1]: append to 0 success, term 1, nextIndex 5 ,args: {1 1 3 1 [{1 {Query <nil> <nil> <nil> 0xc00001a4c8 2922876929404508081 4}}] 3}
+2022/05/21 03:32:56 [raft]:[1]: commit to 4, term 1
+2022/05/21 03:32:56 [raft]:[1]: commit to 4, term 1
+2022/05/21 03:32:56 [raft]:[1]: commit to 4, term 1
+2022/05/21 03:32:56 [raft]:[1]: apply 4,{true {Query <nil> <nil> <nil> 0xc00001a4c8 2922876929404508081 4} 4 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[1]: append to 2 success, term 1, nextIndex 5 ,args: {1 1 3 1 [{1 {Query <nil> <nil> <nil> 0xc00001a4c8 2922876929404508081 4}}] 3}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 4},reply:&{false OK {1 [1 1 1 1 1 1 1 1 1 1] map[1:[x y z]]}},
+[{0 [0 0 0 0 0 0 0 0 0 0] map[]} {1 [1 1 1 1 1 1 1 1 1 1] map[1:[x y z]]}]
+2022/05/21 03:32:56 [shardctrler]:Query Config: {1 [1 1 1 1 1 1 1 1 1 1] map[1:[x y z]]},seq: 4
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 5}
+2022/05/21 03:32:56 [raft]:[1]: persist
+2022/05/21 03:32:56 [raft]:[1]: start to append logs, term 1
+2022/05/21 03:32:56 [raft]:[1]: send append to 0, term 1, nextIndex 5
+2022/05/21 03:32:56 [raft]:[1]: send append to 2, term 1, nextIndex 5
+2022/05/21 03:32:56 [raft]:[1]: Start({Query <nil> <nil> <nil> 0xc00001a558 2922876929404508081 5}) index:5, term:1
+2022/05/21 03:32:56 [shardctrler]:1: SendOperation:Query,index:5
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries: args.PrevLogIndex: 4, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries: args.PrevLogIndex: 4, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[0]: persist
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries update commitIndex: args.LeaderCommit: 4, rf.commitIndex: 3
+2022/05/21 03:32:56 [raft]:[0]: apply 4,{true {Query <nil> <nil> <nil> 0xc00035c1e0 2922876929404508081 4} 4 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[1]: append to 0 success, term 1, nextIndex 6 ,args: {1 1 4 1 [{1 {Query <nil> <nil> <nil> 0xc00001a558 2922876929404508081 5}}] 4}
+2022/05/21 03:32:56 [raft]:[1]: commit to 5, term 1
+2022/05/21 03:32:56 [raft]:[1]: commit to 5, term 1
+2022/05/21 03:32:56 [raft]:[1]: commit to 5, term 1
+2022/05/21 03:32:56 [raft]:[1]: apply 5,{true {Query <nil> <nil> <nil> 0xc00001a558 2922876929404508081 5} 5 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[2]: persist
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 5},reply:&{false OK {1 [1 1 1 1 1 1 1 1 1 1] map[1:[x y z]]}},
+[{0 [0 0 0 0 0 0 0 0 0 0] map[]} {1 [1 1 1 1 1 1 1 1 1 1] map[1:[x y z]]}]
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries update commitIndex: args.LeaderCommit: 4, rf.commitIndex: 3
+2022/05/21 03:32:56 [raft]:[2]: apply 4,{true {Query <nil> <nil> <nil> 0xc0001ee390 2922876929404508081 4} 4 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[1]: append to 2 success, term 1, nextIndex 6 ,args: {1 1 4 1 [{1 {Query <nil> <nil> <nil> 0xc00001a558 2922876929404508081 5}}] 4}
+2022/05/21 03:32:56 [shardctrler]:Query Config: {1 [1 1 1 1 1 1 1 1 1 1] map[1:[x y z]]},seq: 5
+2022/05/21 03:32:56 [shardctrler]:1: Join:&{map[2:[a b c]] 2922876929404508081 6}
+2022/05/21 03:32:56 [raft]:[1]: persist
+2022/05/21 03:32:56 [raft]:[1]: start to append logs, term 1
+2022/05/21 03:32:56 [raft]:[1]: send append to 0, term 1, nextIndex 6
+2022/05/21 03:32:56 [raft]:[1]: send append to 2, term 1, nextIndex 6
+2022/05/21 03:32:56 [raft]:[1]: Start({Join 0xc0003ce1e0 <nil> <nil> <nil> 2922876929404508081 6}) index:6, term:1
+2022/05/21 03:32:56 [shardctrler]:1: SendOperation:Join,index:6
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries: args.PrevLogIndex: 5, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries: args.PrevLogIndex: 5, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[0]: persist
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries update commitIndex: args.LeaderCommit: 5, rf.commitIndex: 4
+2022/05/21 03:32:56 [raft]:[0]: apply 5,{true {Query <nil> <nil> <nil> 0xc00035c270 2922876929404508081 5} 5 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[2]: persist
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries update commitIndex: args.LeaderCommit: 5, rf.commitIndex: 4
+2022/05/21 03:32:56 [raft]:[2]: apply 5,{true {Query <nil> <nil> <nil> 0xc0001ee3f0 2922876929404508081 5} 5 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[1]: append to 0 success, term 1, nextIndex 7 ,args: {1 1 5 1 [{1 {Join 0xc0003ce1e0 <nil> <nil> <nil> 2922876929404508081 6}}] 5}
+2022/05/21 03:32:56 [raft]:[1]: commit to 6, term 1
+2022/05/21 03:32:56 [raft]:[1]: commit to 6, term 1
+2022/05/21 03:32:56 [raft]:[1]: commit to 6, term 1
+2022/05/21 03:32:56 [raft]:[1]: append to 2 success, term 1, nextIndex 7 ,args: {1 1 5 1 [{1 {Join 0xc0003ce1e0 <nil> <nil> <nil> 2922876929404508081 6}}] 5}
+2022/05/21 03:32:56 [raft]:[1]: apply 6,{true {Join 0xc0003ce1e0 <nil> <nil> <nil> 2922876929404508081 6} 6 false [] 0 0}
+2022/05/21 03:32:56 [shardctrler]:1: applier Join:map[2:[a b c]]
+2022/05/21 03:32:56 [shardctrler]:rebalance:[2 1]
+2022/05/21 03:32:56 [shardctrler]:rebalance:[2 1]
+2022/05/21 03:32:56 [shardctrler]:rebalance:[2 1]
+2022/05/21 03:32:56 [shardctrler]:rebalance:[2 1]
+2022/05/21 03:32:56 [shardctrler]:rebalance:[2 1]
+2022/05/21 03:32:56 [shardctrler]:rebalance:[2 1]
+2022/05/21 03:32:56 [shardctrler]:rebalance done:map[1:[5 6 7 8 9] 2:[0 1 2 3 4]]
+2022/05/21 03:32:56 [shardctrler]:1: applier Join:map[2:[a b c]],oldcfg:{1 [1 1 1 1 1 1 1 1 1 1] map[1:[x y z]]},newcfg:{2 [2 2 2 2 2 1 1 1 1 1] map[1:[x y z] 2:[a b c]]}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 7}
+2022/05/21 03:32:56 [raft]:[1]: persist
+2022/05/21 03:32:56 [raft]:[1]: start to append logs, term 1
+2022/05/21 03:32:56 [raft]:[1]: send append to 0, term 1, nextIndex 7
+2022/05/21 03:32:56 [raft]:[1]: send append to 2, term 1, nextIndex 7
+2022/05/21 03:32:56 [raft]:[1]: Start({Query <nil> <nil> <nil> 0xc00001a678 2922876929404508081 7}) index:7, term:1
+2022/05/21 03:32:56 [shardctrler]:1: SendOperation:Query,index:7
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries: args.PrevLogIndex: 6, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries: args.PrevLogIndex: 6, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[0]: persist
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries update commitIndex: args.LeaderCommit: 6, rf.commitIndex: 5
+2022/05/21 03:32:56 [raft]:[2]: persist
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries update commitIndex: args.LeaderCommit: 6, rf.commitIndex: 5
+2022/05/21 03:32:56 [raft]:[0]: apply 6,{true {Join 0xc000489b48 <nil> <nil> <nil> 2922876929404508081 6} 6 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[2]: apply 6,{true {Join 0xc0003ce8a0 <nil> <nil> <nil> 2922876929404508081 6} 6 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[1]: append to 0 success, term 1, nextIndex 8 ,args: {1 1 6 1 [{1 {Query <nil> <nil> <nil> 0xc00001a678 2922876929404508081 7}}] 6}
+2022/05/21 03:32:56 [raft]:[1]: commit to 7, term 1
+2022/05/21 03:32:56 [raft]:[1]: commit to 7, term 1
+2022/05/21 03:32:56 [raft]:[1]: commit to 7, term 1
+2022/05/21 03:32:56 [raft]:[1]: append to 2 success, term 1, nextIndex 8 ,args: {1 1 6 1 [{1 {Query <nil> <nil> <nil> 0xc00001a678 2922876929404508081 7}}] 6}
+2022/05/21 03:32:56 [raft]:[1]: apply 7,{true {Query <nil> <nil> <nil> 0xc00001a678 2922876929404508081 7} 7 false [] 0 0}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 7},reply:&{false OK {2 [2 2 2 2 2 1 1 1 1 1] map[1:[x y z] 2:[a b c]]}},
+[{0 [0 0 0 0 0 0 0 0 0 0] map[]} {1 [1 1 1 1 1 1 1 1 1 1] map[1:[x y z]]} {2 [2 2 2 2 2 1 1 1 1 1] map[1:[x y z] 2:[a b c]]}]
+2022/05/21 03:32:56 [shardctrler]:Query Config: {2 [2 2 2 2 2 1 1 1 1 1] map[1:[x y z] 2:[a b c]]},seq: 7
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 8}
+2022/05/21 03:32:56 [raft]:[1]: persist
+2022/05/21 03:32:56 [raft]:[1]: start to append logs, term 1
+2022/05/21 03:32:56 [raft]:[1]: send append to 0, term 1, nextIndex 8
+2022/05/21 03:32:56 [raft]:[1]: send append to 2, term 1, nextIndex 8
+2022/05/21 03:32:56 [raft]:[1]: Start({Query <nil> <nil> <nil> 0xc00001a6d8 2922876929404508081 8}) index:8, term:1
+2022/05/21 03:32:56 [shardctrler]:1: SendOperation:Query,index:8
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries: args.PrevLogIndex: 7, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries: args.PrevLogIndex: 7, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[2]: persist
+2022/05/21 03:32:56 [raft]:[0]: persist
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries update commitIndex: args.LeaderCommit: 7, rf.commitIndex: 6
+2022/05/21 03:32:56 [raft]:[1]: append to 0 success, term 1, nextIndex 9 ,args: {1 1 7 1 [{1 {Query <nil> <nil> <nil> 0xc00001a6d8 2922876929404508081 8}}] 7}
+2022/05/21 03:32:56 [raft]:[1]: commit to 8, term 1
+2022/05/21 03:32:56 [raft]:[1]: commit to 8, term 1
+2022/05/21 03:32:56 [raft]:[1]: commit to 8, term 1
+2022/05/21 03:32:56 [raft]:[1]: apply 8,{true {Query <nil> <nil> <nil> 0xc00001a6d8 2922876929404508081 8} 8 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[0]: apply 7,{true {Query <nil> <nil> <nil> 0xc0003ca258 2922876929404508081 7} 7 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries update commitIndex: args.LeaderCommit: 7, rf.commitIndex: 6
+2022/05/21 03:32:56 [raft]:[2]: apply 7,{true {Query <nil> <nil> <nil> 0xc0001ee450 2922876929404508081 7} 7 false [] 0 0}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 8},reply:&{false OK {2 [2 2 2 2 2 1 1 1 1 1] map[1:[x y z] 2:[a b c]]}},
+[{0 [0 0 0 0 0 0 0 0 0 0] map[]} {1 [1 1 1 1 1 1 1 1 1 1] map[1:[x y z]]} {2 [2 2 2 2 2 1 1 1 1 1] map[1:[x y z] 2:[a b c]]}]
+2022/05/21 03:32:56 [raft]:[1]: append to 2 success, term 1, nextIndex 9 ,args: {1 1 7 1 [{1 {Query <nil> <nil> <nil> 0xc00001a6d8 2922876929404508081 8}}] 7}
+2022/05/21 03:32:56 [shardctrler]:Query Config: {2 [2 2 2 2 2 1 1 1 1 1] map[1:[x y z] 2:[a b c]]},seq: 8
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 9}
+2022/05/21 03:32:56 [raft]:[1]: persist
+2022/05/21 03:32:56 [raft]:[1]: start to append logs, term 1
+2022/05/21 03:32:56 [raft]:[1]: send append to 0, term 1, nextIndex 9
+2022/05/21 03:32:56 [raft]:[1]: send append to 2, term 1, nextIndex 9
+2022/05/21 03:32:56 [raft]:[1]: Start({Query <nil> <nil> <nil> 0xc0001ee510 2922876929404508081 9}) index:9, term:1
+2022/05/21 03:32:56 [shardctrler]:1: SendOperation:Query,index:9
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries: args.PrevLogIndex: 8, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries: args.PrevLogIndex: 8, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[2]: persist
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries update commitIndex: args.LeaderCommit: 8, rf.commitIndex: 7
+2022/05/21 03:32:56 [raft]:[0]: persist
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries update commitIndex: args.LeaderCommit: 8, rf.commitIndex: 7
+2022/05/21 03:32:56 [raft]:[2]: apply 8,{true {Query <nil> <nil> <nil> 0xc00001a750 2922876929404508081 8} 8 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[0]: apply 8,{true {Query <nil> <nil> <nil> 0xc0003ca2b8 2922876929404508081 8} 8 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[1]: append to 0 success, term 1, nextIndex 10 ,args: {1 1 8 1 [{1 {Query <nil> <nil> <nil> 0xc0001ee510 2922876929404508081 9}}] 8}
+2022/05/21 03:32:56 [raft]:[1]: commit to 9, term 1
+2022/05/21 03:32:56 [raft]:[1]: commit to 9, term 1
+2022/05/21 03:32:56 [raft]:[1]: commit to 9, term 1
+2022/05/21 03:32:56 [raft]:[1]: append to 2 success, term 1, nextIndex 10 ,args: {1 1 8 1 [{1 {Query <nil> <nil> <nil> 0xc0001ee510 2922876929404508081 9}}] 8}
+2022/05/21 03:32:56 [raft]:[1]: apply 9,{true {Query <nil> <nil> <nil> 0xc0001ee510 2922876929404508081 9} 9 false [] 0 0}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 9},reply:&{false OK {2 [2 2 2 2 2 1 1 1 1 1] map[1:[x y z] 2:[a b c]]}},
+[{0 [0 0 0 0 0 0 0 0 0 0] map[]} {1 [1 1 1 1 1 1 1 1 1 1] map[1:[x y z]]} {2 [2 2 2 2 2 1 1 1 1 1] map[1:[x y z] 2:[a b c]]}]
+2022/05/21 03:32:56 [shardctrler]:Query Config: {2 [2 2 2 2 2 1 1 1 1 1] map[1:[x y z] 2:[a b c]]},seq: 9
+2022/05/21 03:32:56 [shardctrler]:1: Leave:&{[1] 2922876929404508081 10}
+2022/05/21 03:32:56 [raft]:[1]: persist
+2022/05/21 03:32:56 [raft]:[1]: start to append logs, term 1
+2022/05/21 03:32:56 [raft]:[1]: send append to 0, term 1, nextIndex 10
+2022/05/21 03:32:56 [raft]:[1]: send append to 2, term 1, nextIndex 10
+2022/05/21 03:32:56 [raft]:[1]: Start({Leave <nil> 0xc00032a270 <nil> <nil> 2922876929404508081 10}) index:10, term:1
+2022/05/21 03:32:56 [shardctrler]:1: SendOperation:Leave,index:10
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries: args.PrevLogIndex: 9, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries: args.PrevLogIndex: 9, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[0]: persist
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries update commitIndex: args.LeaderCommit: 9, rf.commitIndex: 8
+2022/05/21 03:32:56 [raft]:[2]: persist
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries update commitIndex: args.LeaderCommit: 9, rf.commitIndex: 8
+2022/05/21 03:32:56 [raft]:[2]: apply 9,{true {Query <nil> <nil> <nil> 0xc0003ca360 2922876929404508081 9} 9 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[0]: apply 9,{true {Query <nil> <nil> <nil> 0xc0001ee588 2922876929404508081 9} 9 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[1]: append to 0 success, term 1, nextIndex 11 ,args: {1 1 9 1 [{1 {Leave <nil> 0xc00032a270 <nil> <nil> 2922876929404508081 10}}] 9}
+2022/05/21 03:32:56 [raft]:[1]: commit to 10, term 1
+2022/05/21 03:32:56 [raft]:[1]: commit to 10, term 1
+2022/05/21 03:32:56 [raft]:[1]: commit to 10, term 1
+2022/05/21 03:32:56 [raft]:[1]: apply 10,{true {Leave <nil> 0xc00032a270 <nil> <nil> 2922876929404508081 10} 10 false [] 0 0}
+2022/05/21 03:32:56 [shardctrler]:1: applier Leave:[1]
+2022/05/21 03:32:56 [shardctrler]:rebalance:[2]
+2022/05/21 03:32:56 [shardctrler]:rebalance done:map[2:[0 1 2 3 4 5 6 7 8 9]]
+2022/05/21 03:32:56 [raft]:[1]: append to 2 success, term 1, nextIndex 11 ,args: {1 1 9 1 [{1 {Leave <nil> 0xc00032a270 <nil> <nil> 2922876929404508081 10}}] 9}
+2022/05/21 03:32:56 [shardctrler]:1: applier Leave:[1],oldcfg:{2 [2 2 2 2 2 1 1 1 1 1] map[1:[x y z] 2:[a b c]]},newcfg:{3 [2 2 2 2 2 2 2 2 2 2] map[2:[a b c]]}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 11}
+2022/05/21 03:32:56 [raft]:[1]: persist
+2022/05/21 03:32:56 [raft]:[1]: start to append logs, term 1
+2022/05/21 03:32:56 [raft]:[1]: send append to 0, term 1, nextIndex 11
+2022/05/21 03:32:56 [raft]:[1]: send append to 2, term 1, nextIndex 11
+2022/05/21 03:32:56 [raft]:[1]: Start({Query <nil> <nil> <nil> 0xc00035c3d8 2922876929404508081 11}) index:11, term:1
+2022/05/21 03:32:56 [shardctrler]:1: SendOperation:Query,index:11
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries: args.PrevLogIndex: 10, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[0]: persist
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries update commitIndex: args.LeaderCommit: 10, rf.commitIndex: 9
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries: args.PrevLogIndex: 10, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[1]: append to 0 success, term 1, nextIndex 12 ,args: {1 1 10 1 [{1 {Query <nil> <nil> <nil> 0xc00035c3d8 2922876929404508081 11}}] 10}
+2022/05/21 03:32:56 [raft]:[1]: commit to 11, term 1
+2022/05/21 03:32:56 [raft]:[0]: apply 10,{true {Leave <nil> 0xc00023c690 <nil> <nil> 2922876929404508081 10} 10 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[1]: commit to 11, term 1
+2022/05/21 03:32:56 [raft]:[1]: commit to 11, term 1
+2022/05/21 03:32:56 [raft]:[1]: apply 11,{true {Query <nil> <nil> <nil> 0xc00035c3d8 2922876929404508081 11} 11 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[2]: persist
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries update commitIndex: args.LeaderCommit: 10, rf.commitIndex: 9
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 11},reply:&{false OK {3 [2 2 2 2 2 2 2 2 2 2] map[2:[a b c]]}},
+[{0 [0 0 0 0 0 0 0 0 0 0] map[]} {1 [1 1 1 1 1 1 1 1 1 1] map[1:[x y z]]} {2 [2 2 2 2 2 1 1 1 1 1] map[1:[x y z] 2:[a b c]]} {3 [2 2 2 2 2 2 2 2 2 2] map[2:[a b c]]}]
+2022/05/21 03:32:56 [raft]:[2]: apply 10,{true {Leave <nil> 0xc0002bfe30 <nil> <nil> 2922876929404508081 10} 10 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[1]: append to 2 success, term 1, nextIndex 12 ,args: {1 1 10 1 [{1 {Query <nil> <nil> <nil> 0xc00035c3d8 2922876929404508081 11}}] 10}
+2022/05/21 03:32:56 [shardctrler]:Query Config: {3 [2 2 2 2 2 2 2 2 2 2] map[2:[a b c]]},seq: 11
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 12}
+2022/05/21 03:32:56 [raft]:[1]: persist
+2022/05/21 03:32:56 [raft]:[1]: start to append logs, term 1
+2022/05/21 03:32:56 [raft]:[1]: send append to 0, term 1, nextIndex 12
+2022/05/21 03:32:56 [raft]:[1]: send append to 2, term 1, nextIndex 12
+2022/05/21 03:32:56 [raft]:[1]: Start({Query <nil> <nil> <nil> 0xc0001ee618 2922876929404508081 12}) index:12, term:1
+2022/05/21 03:32:56 [shardctrler]:1: SendOperation:Query,index:12
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries: args.PrevLogIndex: 11, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries: args.PrevLogIndex: 11, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[0]: persist
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries update commitIndex: args.LeaderCommit: 11, rf.commitIndex: 10
+2022/05/21 03:32:56 [raft]:[0]: apply 11,{true {Query <nil> <nil> <nil> 0xc00035c450 2922876929404508081 11} 11 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[2]: persist
+2022/05/21 03:32:56 [raft]:[1]: append to 0 success, term 1, nextIndex 13 ,args: {1 1 11 1 [{1 {Query <nil> <nil> <nil> 0xc0001ee618 2922876929404508081 12}}] 11}
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries update commitIndex: args.LeaderCommit: 11, rf.commitIndex: 10
+2022/05/21 03:32:56 [raft]:[2]: apply 11,{true {Query <nil> <nil> <nil> 0xc00001a840 2922876929404508081 11} 11 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[1]: commit to 12, term 1
+2022/05/21 03:32:56 [raft]:[1]: commit to 12, term 1
+2022/05/21 03:32:56 [raft]:[1]: commit to 12, term 1
+2022/05/21 03:32:56 [raft]:[1]: apply 12,{true {Query <nil> <nil> <nil> 0xc0001ee618 2922876929404508081 12} 12 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[1]: append to 2 success, term 1, nextIndex 13 ,args: {1 1 11 1 [{1 {Query <nil> <nil> <nil> 0xc0001ee618 2922876929404508081 12}}] 11}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 12},reply:&{false OK {3 [2 2 2 2 2 2 2 2 2 2] map[2:[a b c]]}},
+[{0 [0 0 0 0 0 0 0 0 0 0] map[]} {1 [1 1 1 1 1 1 1 1 1 1] map[1:[x y z]]} {2 [2 2 2 2 2 1 1 1 1 1] map[1:[x y z] 2:[a b c]]} {3 [2 2 2 2 2 2 2 2 2 2] map[2:[a b c]]}]
+2022/05/21 03:32:56 [shardctrler]:Query Config: {3 [2 2 2 2 2 2 2 2 2 2] map[2:[a b c]]},seq: 12
+2022/05/21 03:32:56 [shardctrler]:1: Leave:&{[2] 2922876929404508081 13}
+2022/05/21 03:32:56 [raft]:[1]: persist
+2022/05/21 03:32:56 [raft]:[1]: start to append logs, term 1
+2022/05/21 03:32:56 [raft]:[1]: send append to 0, term 1, nextIndex 13
+2022/05/21 03:32:56 [raft]:[1]: send append to 2, term 1, nextIndex 13
+2022/05/21 03:32:56 [raft]:[1]: Start({Leave <nil> 0xc00032b020 <nil> <nil> 2922876929404508081 13}) index:13, term:1
+2022/05/21 03:32:56 [shardctrler]:1: SendOperation:Leave,index:13
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries: args.PrevLogIndex: 12, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries: args.PrevLogIndex: 12, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[0]: persist
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries update commitIndex: args.LeaderCommit: 12, rf.commitIndex: 11
+2022/05/21 03:32:56 [raft]:[2]: persist
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries update commitIndex: args.LeaderCommit: 12, rf.commitIndex: 11
+2022/05/21 03:32:56 [raft]:[0]: apply 12,{true {Query <nil> <nil> <nil> 0xc0001ee690 2922876929404508081 12} 12 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[2]: apply 12,{true {Query <nil> <nil> <nil> 0xc0003ca468 2922876929404508081 12} 12 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[1]: append to 0 success, term 1, nextIndex 14 ,args: {1 1 12 1 [{1 {Leave <nil> 0xc00032b020 <nil> <nil> 2922876929404508081 13}}] 12}
+2022/05/21 03:32:56 [raft]:[1]: commit to 13, term 1
+2022/05/21 03:32:56 [raft]:[1]: commit to 13, term 1
+2022/05/21 03:32:56 [raft]:[1]: commit to 13, term 1
+2022/05/21 03:32:56 [raft]:[1]: append to 2 success, term 1, nextIndex 14 ,args: {1 1 12 1 [{1 {Leave <nil> 0xc00032b020 <nil> <nil> 2922876929404508081 13}}] 12}
+2022/05/21 03:32:56 [raft]:[1]: apply 13,{true {Leave <nil> 0xc00032b020 <nil> <nil> 2922876929404508081 13} 13 false [] 0 0}
+2022/05/21 03:32:56 [shardctrler]:1: applier Leave:[2]
+2022/05/21 03:32:56 [shardctrler]:1: applier Leave:[2],oldcfg:{3 [2 2 2 2 2 2 2 2 2 2] map[2:[a b c]]},newcfg:{4 [0 0 0 0 0 0 0 0 0 0] map[]}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 14}
+2022/05/21 03:32:56 [raft]:[1]: persist
+2022/05/21 03:32:56 [raft]:[1]: start to append logs, term 1
+2022/05/21 03:32:56 [raft]:[1]: send append to 0, term 1, nextIndex 14
+2022/05/21 03:32:56 [raft]:[1]: send append to 2, term 1, nextIndex 14
+2022/05/21 03:32:56 [raft]:[1]: Start({Query <nil> <nil> <nil> 0xc0003ca528 2922876929404508081 14}) index:14, term:1
+2022/05/21 03:32:56 [shardctrler]:1: SendOperation:Query,index:14
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries: args.PrevLogIndex: 13, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries: args.PrevLogIndex: 13, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[2]: persist
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries update commitIndex: args.LeaderCommit: 13, rf.commitIndex: 12
+2022/05/21 03:32:56 [raft]:[2]: apply 13,{true {Leave <nil> 0xc00023de90 <nil> <nil> 2922876929404508081 13} 13 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[1]: append to 2 success, term 1, nextIndex 15 ,args: {1 1 13 1 [{1 {Query <nil> <nil> <nil> 0xc0003ca528 2922876929404508081 14}}] 13}
+2022/05/21 03:32:56 [raft]:[1]: commit to 14, term 1
+2022/05/21 03:32:56 [raft]:[1]: apply 14,{true {Query <nil> <nil> <nil> 0xc0003ca528 2922876929404508081 14} 14 false [] 0 0}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{-1 2922876929404508081 14},reply:&{false OK {4 [0 0 0 0 0 0 0 0 0 0] map[]}},
+[{0 [0 0 0 0 0 0 0 0 0 0] map[]} {1 [1 1 1 1 1 1 1 1 1 1] map[1:[x y z]]} {2 [2 2 2 2 2 1 1 1 1 1] map[1:[x y z] 2:[a b c]]} {3 [2 2 2 2 2 2 2 2 2 2] map[2:[a b c]]} {4 [0 0 0 0 0 0 0 0 0 0] map[]}]
+2022/05/21 03:32:56 [raft]:[0]: persist
+2022/05/21 03:32:56 [raft]:[0]: AppendEntries update commitIndex: args.LeaderCommit: 13, rf.commitIndex: 12
+2022/05/21 03:32:56 [raft]:[0]: apply 13,{true {Leave <nil> 0xc00032b770 <nil> <nil> 2922876929404508081 13} 13 false [] 0 0}
+2022/05/21 03:32:56 [shardctrler]:Query Config: {4 [0 0 0 0 0 0 0 0 0 0] map[]},seq: 14
+  ... Passed
+Test: Historical queries ...
+2022/05/21 03:32:56 [shardctrler]:0: Killed...
+2022/05/21 03:32:56 [raft]:[0]: kill
+2022/05/21 03:32:56 [raft]:[1]: append to 0 success, term 1, nextIndex 15 ,args: {1 1 13 1 [{1 {Query <nil> <nil> <nil> 0xc0003ca528 2922876929404508081 14}}] 13}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{0 2922876929404508081 15}
+2022/05/21 03:32:56 [raft]:[1]: persist
+2022/05/21 03:32:56 [raft]:[1]: start to append logs, term 1
+2022/05/21 03:32:56 [raft]:[1]: send append to 0, term 1, nextIndex 15
+2022/05/21 03:32:56 [raft]:[1]: send append to 2, term 1, nextIndex 15
+2022/05/21 03:32:56 [raft]:[1]: Start({Query <nil> <nil> <nil> 0xc00001a990 2922876929404508081 15}) index:15, term:1
+2022/05/21 03:32:56 [shardctrler]:1: SendOperation:Query,index:15
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries: args.PrevLogIndex: 14, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[2]: persist
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries update commitIndex: args.LeaderCommit: 14, rf.commitIndex: 13
+2022/05/21 03:32:56 [raft]:[2]: apply 14,{true {Query <nil> <nil> <nil> 0xc0001ee708 2922876929404508081 14} 14 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[1]: append to 2 success, term 1, nextIndex 16 ,args: {1 1 14 1 [{1 {Query <nil> <nil> <nil> 0xc00001a990 2922876929404508081 15}}] 14}
+2022/05/21 03:32:56 [raft]:[1]: commit to 15, term 1
+2022/05/21 03:32:56 [raft]:[1]: apply 15,{true {Query <nil> <nil> <nil> 0xc00001a990 2922876929404508081 15} 15 false [] 0 0}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{0 2922876929404508081 15},reply:&{false OK {0 [0 0 0 0 0 0 0 0 0 0] map[]}},
+[{0 [0 0 0 0 0 0 0 0 0 0] map[]} {1 [1 1 1 1 1 1 1 1 1 1] map[1:[x y z]]} {2 [2 2 2 2 2 1 1 1 1 1] map[1:[x y z] 2:[a b c]]} {3 [2 2 2 2 2 2 2 2 2 2] map[2:[a b c]]} {4 [0 0 0 0 0 0 0 0 0 0] map[]}]
+2022/05/21 03:32:56 [shardctrler]:Query Config: {0 [0 0 0 0 0 0 0 0 0 0] map[]},seq: 15
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{1 2922876929404508081 16}
+2022/05/21 03:32:56 [raft]:[1]: persist
+2022/05/21 03:32:56 [raft]:[1]: start to append logs, term 1
+2022/05/21 03:32:56 [raft]:[1]: send append to 0, term 1, nextIndex 15
+2022/05/21 03:32:56 [raft]:[1]: send append to 2, term 1, nextIndex 16
+2022/05/21 03:32:56 [raft]:[1]: Start({Query <nil> <nil> <nil> 0xc00001aa08 2922876929404508081 16}) index:16, term:1
+2022/05/21 03:32:56 [shardctrler]:1: SendOperation:Query,index:16
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries: args.PrevLogIndex: 15, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[2]: persist
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries update commitIndex: args.LeaderCommit: 15, rf.commitIndex: 14
+2022/05/21 03:32:56 [raft]:[2]: apply 15,{true {Query <nil> <nil> <nil> 0xc0001ee768 2922876929404508081 15} 15 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[1]: append to 2 success, term 1, nextIndex 17 ,args: {1 1 15 1 [{1 {Query <nil> <nil> <nil> 0xc00001aa08 2922876929404508081 16}}] 15}
+2022/05/21 03:32:56 [raft]:[1]: commit to 16, term 1
+2022/05/21 03:32:56 [raft]:[1]: apply 16,{true {Query <nil> <nil> <nil> 0xc00001aa08 2922876929404508081 16} 16 false [] 0 0}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{1 2922876929404508081 16},reply:&{false OK {1 [1 1 1 1 1 1 1 1 1 1] map[1:[x y z]]}},
+[{0 [0 0 0 0 0 0 0 0 0 0] map[]} {1 [1 1 1 1 1 1 1 1 1 1] map[1:[x y z]]} {2 [2 2 2 2 2 1 1 1 1 1] map[1:[x y z] 2:[a b c]]} {3 [2 2 2 2 2 2 2 2 2 2] map[2:[a b c]]} {4 [0 0 0 0 0 0 0 0 0 0] map[]}]
+2022/05/21 03:32:56 [shardctrler]:Query Config: {1 [1 1 1 1 1 1 1 1 1 1] map[1:[x y z]]},seq: 16
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{2 2922876929404508081 17}
+2022/05/21 03:32:56 [raft]:[1]: persist
+2022/05/21 03:32:56 [raft]:[1]: start to append logs, term 1
+2022/05/21 03:32:56 [raft]:[1]: send append to 0, term 1, nextIndex 15
+2022/05/21 03:32:56 [raft]:[1]: send append to 2, term 1, nextIndex 17
+2022/05/21 03:32:56 [raft]:[1]: Start({Query <nil> <nil> <nil> 0xc00001aab0 2922876929404508081 17}) index:17, term:1
+2022/05/21 03:32:56 [shardctrler]:1: SendOperation:Query,index:17
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries: args.PrevLogIndex: 16, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[2]: persist
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries update commitIndex: args.LeaderCommit: 16, rf.commitIndex: 15
+2022/05/21 03:32:56 [raft]:[2]: apply 16,{true {Query <nil> <nil> <nil> 0xc0003ca600 2922876929404508081 16} 16 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[1]: append to 2 success, term 1, nextIndex 18 ,args: {1 1 16 1 [{1 {Query <nil> <nil> <nil> 0xc00001aab0 2922876929404508081 17}}] 16}
+2022/05/21 03:32:56 [raft]:[1]: commit to 17, term 1
+2022/05/21 03:32:56 [raft]:[1]: apply 17,{true {Query <nil> <nil> <nil> 0xc00001aab0 2922876929404508081 17} 17 false [] 0 0}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{2 2922876929404508081 17},reply:&{false OK {2 [2 2 2 2 2 1 1 1 1 1] map[1:[x y z] 2:[a b c]]}},
+[{0 [0 0 0 0 0 0 0 0 0 0] map[]} {1 [1 1 1 1 1 1 1 1 1 1] map[1:[x y z]]} {2 [2 2 2 2 2 1 1 1 1 1] map[1:[x y z] 2:[a b c]]} {3 [2 2 2 2 2 2 2 2 2 2] map[2:[a b c]]} {4 [0 0 0 0 0 0 0 0 0 0] map[]}]
+2022/05/21 03:32:56 [shardctrler]:Query Config: {2 [2 2 2 2 2 1 1 1 1 1] map[1:[x y z] 2:[a b c]]},seq: 17
+2022/05/21 03:32:56 [raft]:[1]: start to append logs, term 1
+2022/05/21 03:32:56 [raft]:[1]: send append to 0, term 1, nextIndex 15
+2022/05/21 03:32:56 [raft]:[1]: send append to 2, term 1, nextIndex 18
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries: args.PrevLogIndex: 17, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries update commitIndex: args.LeaderCommit: 17, rf.commitIndex: 16
+2022/05/21 03:32:56 [raft]:[2]: apply 17,{true {Query <nil> <nil> <nil> 0xc00001ab28 2922876929404508081 17} 17 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[1]: append to 2 success, term 1, nextIndex 18 ,args: {1 1 17 1 [] 17}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{0 2922876929404508081 18}
+2022/05/21 03:32:56 [raft]:[1]: persist
+2022/05/21 03:32:56 [raft]:[1]: start to append logs, term 1
+2022/05/21 03:32:56 [raft]:[1]: send append to 0, term 1, nextIndex 15
+2022/05/21 03:32:56 [raft]:[1]: send append to 2, term 1, nextIndex 18
+2022/05/21 03:32:56 [raft]:[1]: Start({Query <nil> <nil> <nil> 0xc00001ab70 2922876929404508081 18}) index:18, term:1
+2022/05/21 03:32:56 [shardctrler]:1: SendOperation:Query,index:18
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries: args.PrevLogIndex: 17, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[2]: persist
+2022/05/21 03:32:56 [raft]:[1]: append to 2 success, term 1, nextIndex 19 ,args: {1 1 17 1 [{1 {Query <nil> <nil> <nil> 0xc00001ab70 2922876929404508081 18}}] 17}
+2022/05/21 03:32:56 [raft]:[1]: commit to 18, term 1
+2022/05/21 03:32:56 [raft]:[1]: apply 18,{true {Query <nil> <nil> <nil> 0xc00001ab70 2922876929404508081 18} 18 false [] 0 0}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{0 2922876929404508081 18},reply:&{false OK {0 [0 0 0 0 0 0 0 0 0 0] map[]}},
+[{0 [0 0 0 0 0 0 0 0 0 0] map[]} {1 [1 1 1 1 1 1 1 1 1 1] map[1:[x y z]]} {2 [2 2 2 2 2 1 1 1 1 1] map[1:[x y z] 2:[a b c]]} {3 [2 2 2 2 2 2 2 2 2 2] map[2:[a b c]]} {4 [0 0 0 0 0 0 0 0 0 0] map[]}]
+2022/05/21 03:32:56 [shardctrler]:Query Config: {0 [0 0 0 0 0 0 0 0 0 0] map[]},seq: 18
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{3 2922876929404508081 19}
+2022/05/21 03:32:56 [raft]:[1]: persist
+2022/05/21 03:32:56 [raft]:[1]: start to append logs, term 1
+2022/05/21 03:32:56 [raft]:[1]: send append to 0, term 1, nextIndex 15
+2022/05/21 03:32:56 [raft]:[1]: send append to 2, term 1, nextIndex 19
+2022/05/21 03:32:56 [raft]:[1]: Start({Query <nil> <nil> <nil> 0xc0003ca750 2922876929404508081 19}) index:19, term:1
+2022/05/21 03:32:56 [shardctrler]:1: SendOperation:Query,index:19
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries: args.PrevLogIndex: 18, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[2]: persist
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries update commitIndex: args.LeaderCommit: 18, rf.commitIndex: 17
+2022/05/21 03:32:56 [raft]:[2]: apply 18,{true {Query <nil> <nil> <nil> 0xc0003ca6c0 2922876929404508081 18} 18 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[1]: append to 2 success, term 1, nextIndex 20 ,args: {1 1 18 1 [{1 {Query <nil> <nil> <nil> 0xc0003ca750 2922876929404508081 19}}] 18}
+2022/05/21 03:32:56 [raft]:[1]: commit to 19, term 1
+2022/05/21 03:32:56 [raft]:[1]: apply 19,{true {Query <nil> <nil> <nil> 0xc0003ca750 2922876929404508081 19} 19 false [] 0 0}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{3 2922876929404508081 19},reply:&{false OK {3 [2 2 2 2 2 2 2 2 2 2] map[2:[a b c]]}},
+[{0 [0 0 0 0 0 0 0 0 0 0] map[]} {1 [1 1 1 1 1 1 1 1 1 1] map[1:[x y z]]} {2 [2 2 2 2 2 1 1 1 1 1] map[1:[x y z] 2:[a b c]]} {3 [2 2 2 2 2 2 2 2 2 2] map[2:[a b c]]} {4 [0 0 0 0 0 0 0 0 0 0] map[]}]
+2022/05/21 03:32:56 [shardctrler]:Query Config: {3 [2 2 2 2 2 2 2 2 2 2] map[2:[a b c]]},seq: 19
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{4 2922876929404508081 20}
+2022/05/21 03:32:56 [raft]:[1]: persist
+2022/05/21 03:32:56 [raft]:[1]: start to append logs, term 1
+2022/05/21 03:32:56 [raft]:[1]: send append to 0, term 1, nextIndex 15
+2022/05/21 03:32:56 [raft]:[1]: send append to 2, term 1, nextIndex 20
+2022/05/21 03:32:56 [raft]:[1]: Start({Query <nil> <nil> <nil> 0xc00035c000 2922876929404508081 20}) index:20, term:1
+2022/05/21 03:32:56 [shardctrler]:1: SendOperation:Query,index:20
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries: args.PrevLogIndex: 19, args.PrevLogTerm: 1
+2022/05/21 03:32:56 [raft]:[2]: persist
+2022/05/21 03:32:56 [raft]:[2]: AppendEntries update commitIndex: args.LeaderCommit: 19, rf.commitIndex: 18
+2022/05/21 03:32:56 [raft]:[2]: apply 19,{true {Query <nil> <nil> <nil> 0xc00001a0f0 2922876929404508081 19} 19 false [] 0 0}
+2022/05/21 03:32:56 [raft]:[1]: append to 2 success, term 1, nextIndex 21 ,args: {1 1 19 1 [{1 {Query <nil> <nil> <nil> 0xc00035c000 2922876929404508081 20}}] 19}
+2022/05/21 03:32:56 [raft]:[1]: commit to 20, term 1
+2022/05/21 03:32:56 [raft]:[1]: apply 20,{true {Query <nil> <nil> <nil> 0xc00035c000 2922876929404508081 20} 20 false [] 0 0}
+2022/05/21 03:32:56 [shardctrler]:1: Query:&{4 2922876929404508081 20},reply:&{false OK {4 [0 0 0 0 0 0 0 0 0 0] map[]}},
+[{0 [0 0 0 0 0 0 0 0 0 0] map[]} {1 [1 1 1 1 1 1 1 1 1 1] map[1:[x y z]]} {2 [2 2 2 2 2 1 1 1 1 1] map[1:[x y z] 2:[a b c]]} {3 [2 2 2 2 2 2 2 2 2 2] map[2:[a b c]]} {4 [0 0 0 0 0 0 0 0 0 0] map[]}]
+2022/05/21 03:32:56 [shardctrler]:Query Config: {4 [0 0 0 0 0 0 0 0 0 0] map[]},seq: 20
+2022/05/21 03:32:56 [raft]:0: init
+2022/05/21 03:32:56 [raft]:[0]: persist
+2022/05/21 03:32:56 [raft]:0: init done
+2022/05/21 03:32:56 [shardctrler]:0: Started...
+2022/05/21 03:32:56 [shardctrler]:1: Killed...
+2022/05/21 03:32:56 [raft]:[1]: kill
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:56 [raft]:[1]: start to append logs, term 1
+2022/05/21 03:32:56 [raft]:[1]: send append to 0, term 1, nextIndex 15
+2022/05/21 03:32:56 [raft]:[1]: send append to 2, term 1, nextIndex 21
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:56 [shardctrler]:0: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:56 [shardctrler]:2: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [shardctrler]:0: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [shardctrler]:2: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [shardctrler]:0: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [shardctrler]:2: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [shardctrler]:0: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [shardctrler]:2: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [raft]:[0]: start a new election, term 2, voteCount 2
+2022/05/21 03:32:57 [raft]:[2]: RequestVote: term is too old
+2022/05/21 03:32:57 [raft]:[2]: persist
+2022/05/21 03:32:57 [raft]:[0]: election not get vote, term 2, voteCount 1
+2022/05/21 03:32:57 [shardctrler]:0: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [shardctrler]:2: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [shardctrler]:0: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [shardctrler]:2: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [shardctrler]:0: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [shardctrler]:2: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [shardctrler]:0: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [shardctrler]:2: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [shardctrler]:0: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [shardctrler]:2: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [shardctrler]:0: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [shardctrler]:2: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [shardctrler]:0: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [shardctrler]:2: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [shardctrler]:0: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [shardctrler]:2: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [shardctrler]:0: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [shardctrler]:2: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [shardctrler]:0: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [shardctrler]:2: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [raft]:[2]: start a new election, term 3, voteCount 2
+2022/05/21 03:32:57 [raft]:[0]: RequestVote: term is too old
+2022/05/21 03:32:57 [raft]:[0]: persist
+2022/05/21 03:32:57 [raft]:[0]: persist
+2022/05/21 03:32:57 [raft]:[2]: election get vote, term 3, voteCount 1
+2022/05/21 03:32:57 [raft]:[2]: nextIndex[0]: = 21
+2022/05/21 03:32:57 [raft]:[2]: nextIndex[1]: = 21
+2022/05/21 03:32:57 [raft]:[2]: nextIndex[2]: = 21
+2022/05/21 03:32:57 [raft]:[2]: become leader, term 3
+2022/05/21 03:32:57 [raft]:[2]: start to append logs, term 3
+2022/05/21 03:32:57 [raft]:[2]: send append to 0, term 3, nextIndex 21
+2022/05/21 03:32:57 [raft]:[2]: send append to 1, term 3, nextIndex 21
+2022/05/21 03:32:57 [raft]:[0]: AppendEntries: args.PrevLogIndex: 20, args.PrevLogTerm: 1
+2022/05/21 03:32:57 [raft]:[0]: AppendEntries: log is too short
+2022/05/21 03:32:57 [raft]:[2]: append to 0 failed, term 3, nextIndex 21
+2022/05/21 03:32:57 [shardctrler]:0: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [shardctrler]:2: Query:&{0 2922876929404508081 21}
+2022/05/21 03:32:57 [raft]:[2]: persist
+2022/05/21 03:32:57 [raft]:[2]: start to append logs, term 3
+2022/05/21 03:32:57 [raft]:[2]: send append to 0, term 3, nextIndex 15
+2022/05/21 03:32:57 [raft]:[2]: send append to 1, term 3, nextIndex 21
+2022/05/21 03:32:57 [raft]:[2]: Start({Query <nil> <nil> <nil> 0xc0001ee0c0 2922876929404508081 21}) index:21, term:3
+2022/05/21 03:32:57 [shardctrler]:2: SendOperation:Query,index:21
+2022/05/21 03:32:57 [raft]:[0]: AppendEntries: args.PrevLogIndex: 14, args.PrevLogTerm: 1
+2022/05/21 03:32:57 [raft]:[0]: persist
+2022/05/21 03:32:57 [raft]:[0]: AppendEntries update commitIndex: args.LeaderCommit: 19, rf.commitIndex: 0
+2022/05/21 03:32:57 [raft]:[0]: apply 1,{true {Query <nil> <nil> <nil> 0xc00001a270 2922876929404508081 1} 1 false [] 0 0}
+2022/05/21 03:32:57 [raft]:[0]: apply 2,{true {Query <nil> <nil> <nil> 0xc00001a288 2922876929404508081 2} 2 false [] 0 0}
+2022/05/21 03:32:57 [raft]:[0]: apply 3,{true {Join 0xc0004bae40 <nil> <nil> <nil> 2922876929404508081 3} 3 false [] 0 0}
+2022/05/21 03:32:57 [raft]:[0]: apply 4,{true {Query <nil> <nil> <nil> 0xc00001a2a0 2922876929404508081 4} 4 false [] 0 0}
+2022/05/21 03:32:57 [raft]:[2]: append to 0 success, term 3, nextIndex 22 ,args: {3 2 14 1 [{1 {Query <nil> <nil> <nil> 0xc0001ee768 2922876929404508081 15}} {1 {Query <nil> <nil> <nil> 0xc0003ca600 2922876929404508081 16}} {1 {Query <nil> <nil> <nil> 0xc00001ab28 2922876929404508081 17}} {1 {Query <nil> <nil> <nil> 0xc0003ca6c0 2922876929404508081 18}} {1 {Query <nil> <nil> <nil> 0xc00001a0f0 2922876929404508081 19}} {1 {Query <nil> <nil> <nil> 0xc00035c078 2922876929404508081 20}} {3 {Query <nil> <nil> <nil> 0xc0001ee0c0 2922876929404508081 21}}] 19}
+2022/05/21 03:32:57 [raft]:[2]: commit to 21, term 3
+2022/05/21 03:32:57 [raft]:[2]: commit to 21, term 3
+2022/05/21 03:32:57 [raft]:[2]: commit to 21, term 3
+2022/05/21 03:32:57 [raft]:[0]: apply 5,{true {Query <nil> <nil> <nil> 0xc00001a2b8 2922876929404508081 5} 5 false [] 0 0}
+2022/05/21 03:32:57 [raft]:[0]: apply 6,{true {Join 0xc0004baea0 <nil> <nil> <nil> 2922876929404508081 6} 6 false [] 0 0}
+2022/05/21 03:32:57 [raft]:[0]: apply 7,{true {Query <nil> <nil> <nil> 0xc00001a2d0 2922876929404508081 7} 7 false [] 0 0}
+2022/05/21 03:32:57 [raft]:[0]: apply 8,{true {Query <nil> <nil> <nil> 0xc00001a2e8 2922876929404508081 8} 8 false [] 0 0}
+2022/05/21 03:32:57 [raft]:[2]: apply 20,{true {Query <nil> <nil> <nil> 0xc00035c078 2922876929404508081 20} 20 false [] 0 0}
+2022/05/21 03:32:57 [raft]:[0]: apply 9,{true {Query <nil> <nil> <nil> 0xc00001a300 2922876929404508081 9} 9 false [] 0 0}
+2022/05/21 03:32:57 [raft]:[2]: apply 21,{true {Query <nil> <nil> <nil> 0xc0001ee0c0 2922876929404508081 21} 21 false [] 0 0}
+2022/05/21 03:32:57 [raft]:[0]: apply 10,{true {Leave <nil> 0xc00042dad0 <nil> <nil> 2922876929404508081 10} 10 false [] 0 0}
+2022/05/21 03:32:57 [raft]:[0]: apply 11,{true {Query <nil> <nil> <nil> 0xc00001a348 2922876929404508081 11} 11 false [] 0 0}
+2022/05/21 03:32:57 [shardctrler]:2: Query:&{0 2922876929404508081 21},reply:&{false OK {0 [0 0 0 0 0 0 0 0 0 0] map[]}},
+[{0 [0 0 0 0 0 0 0 0 0 0] map[]}]
+2022/05/21 03:32:57 [raft]:[0]: apply 12,{true {Query <nil> <nil> <nil> 0xc00001a360 2922876929404508081 12} 12 false [] 0 0}
+2022/05/21 03:32:57 [raft]:[0]: apply 13,{true {Leave <nil> 0xc00042db00 <nil> <nil> 2922876929404508081 13} 13 false [] 0 0}
+2022/05/21 03:32:57 [raft]:[0]: apply 14,{true {Query <nil> <nil> <nil> 0xc00001a378 2922876929404508081 14} 14 false [] 0 0}
+2022/05/21 03:32:57 [raft]:[0]: apply 15,{true {Query <nil> <nil> <nil> 0xc0003ca3d8 2922876929404508081 15} 15 false [] 0 0}
+2022/05/21 03:32:57 [raft]:[0]: apply 16,{true {Query <nil> <nil> <nil> 0xc0003ca3f0 2922876929404508081 16} 16 false [] 0 0}
+2022/05/21 03:32:57 [raft]:[0]: apply 17,{true {Query <nil> <nil> <nil> 0xc0003ca408 2922876929404508081 17} 17 false [] 0 0}
+2022/05/21 03:32:57 [raft]:[0]: apply 18,{true {Query <nil> <nil> <nil> 0xc0003ca420 2922876929404508081 18} 18 false [] 0 0}
+2022/05/21 03:32:57 [raft]:[0]: apply 19,{true {Query <nil> <nil> <nil> 0xc0003ca438 2922876929404508081 19} 19 false [] 0 0}
+2022/05/21 03:32:57 [shardctrler]:Query Config: {0 [0 0 0 0 0 0 0 0 0 0] map[]},seq: 21
+2022/05/21 03:32:57 [shardctrler]:2: Query:&{1 2922876929404508081 22}
+2022/05/21 03:32:57 [raft]:[2]: persist
+2022/05/21 03:32:57 [raft]:[2]: start to append logs, term 3
+2022/05/21 03:32:57 [raft]:[2]: send append to 0, term 3, nextIndex 22
+2022/05/21 03:32:57 [raft]:[2]: send append to 1, term 3, nextIndex 21
+2022/05/21 03:32:57 [raft]:[2]: Start({Query <nil> <nil> <nil> 0xc00001a690 2922876929404508081 22}) index:22, term:3
+2022/05/21 03:32:57 [shardctrler]:2: SendOperation:Query,index:22
+2022/05/21 03:32:57 [raft]:[0]: AppendEntries: args.PrevLogIndex: 21, args.PrevLogTerm: 3
+2022/05/21 03:32:57 [raft]:[0]: persist
+2022/05/21 03:32:57 [raft]:[0]: AppendEntries update commitIndex: args.LeaderCommit: 21, rf.commitIndex: 19
+2022/05/21 03:32:57 [raft]:[0]: apply 20,{true {Query <nil> <nil> <nil> 0xc0003ca450 2922876929404508081 20} 20 false [] 0 0}
+2022/05/21 03:32:57 [raft]:[0]: apply 21,{true {Query <nil> <nil> <nil> 0xc0003ca480 2922876929404508081 21} 21 false [] 0 0}
+2022/05/21 03:32:57 [raft]:[2]: append to 0 success, term 3, nextIndex 23 ,args: {3 2 21 3 [{3 {Query <nil> <nil> <nil> 0xc00001a690 2922876929404508081 22}}] 21}
+2022/05/21 03:32:57 [raft]:[2]: commit to 22, term 3
+2022/05/21 03:32:57 [raft]:[2]: commit to 22, term 3
+2022/05/21 03:32:57 [raft]:[2]: commit to 22, term 3
+2022/05/21 03:32:57 [raft]:[2]: apply 22,{true {Query <nil> <nil> <nil> 0xc00001a690 2922876929404508081 22} 22 false [] 0 0}
+panic: runtime error: index out of range [1] with length 1
+
+goroutine 1000 [running]:
+6.824/shardctrler.(*ShardCtrler).Query(0xc000071140, 0xc00001a690, 0xc0002fbb00)
+	/mnt/e/MIT-6.824/src/shardctrler/server.go:103 +0x605
+reflect.Value.call({0xc000070480?, 0xc0000108c8?, 0xc0002fbb00?}, {0x7294ac, 0x4}, {0xc00045dbf0, 0x3, 0x7040a0?})
+	/usr/local/go/src/reflect/value.go:556 +0xd9d
+reflect.Value.Call({0xc000070480?, 0xc0000108c8?, 0xc0002e5528?}, {0xc00045dbf0, 0x3, 0x3})
+	/usr/local/go/src/reflect/value.go:339 +0xd8
+6.824/labrpc.(*Service).dispatch(0xc000170140, {0x72c76f, 0x5}, {{0x6e3160, 0xc00005be80}, {0x72c763, 0x11}, {0x788c40, 0x6d9ea0}, {0xc0003661e0, ...}, ...})
+	/mnt/e/MIT-6.824/src/labrpc/labrpc.go:496 +0x47c
+6.824/labrpc.(*Server).dispatch(0xc00000ea98, {{0x6e3160, 0xc00005be80}, {0x72c763, 0x11}, {0x788c40, 0x6d9ea0}, {0xc0003661e0, 0x47, 0x92}, ...})
+	/mnt/e/MIT-6.824/src/labrpc/labrpc.go:420 +0x266
+6.824/labrpc.(*Network).processReq.func1()
+	/mnt/e/MIT-6.824/src/labrpc/labrpc.go:240 +0x9d
+created by 6.824/labrpc.(*Network).processReq
+	/mnt/e/MIT-6.824/src/labrpc/labrpc.go:239 +0x292
+exit status 2
+FAIL	6.824/shardctrler	1.528s
