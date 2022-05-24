@@ -1,15 +1,18 @@
 package shardkv
 
-import "6.824/porcupine"
-import "6.824/models"
-import "testing"
-import "strconv"
-import "time"
-import "fmt"
-import "sync/atomic"
-import "sync"
-import "math/rand"
-import "io/ioutil"
+import (
+	"fmt"
+	"io/ioutil"
+	"math/rand"
+	"strconv"
+	"sync"
+	"sync/atomic"
+	"testing"
+	"time"
+
+	"6.824/models"
+	"6.824/porcupine"
+)
 
 const linearizabilityCheckTimeout = 1 * time.Second
 
@@ -156,6 +159,7 @@ func TestSnapshot(t *testing.T) {
 	ck := cfg.makeClient()
 
 	cfg.join(0)
+	DPrintf("Test: join 0")
 
 	n := 30
 	ka := make([]string, n)
@@ -170,8 +174,11 @@ func TestSnapshot(t *testing.T) {
 	}
 
 	cfg.join(1)
+	DPrintf("Test: join 1")
 	cfg.join(2)
+	DPrintf("Test: join 2")
 	cfg.leave(0)
+	DPrintf("Test: leave 0")
 
 	for i := 0; i < n; i++ {
 		check(t, ck, ka[i], va[i])
@@ -181,7 +188,9 @@ func TestSnapshot(t *testing.T) {
 	}
 
 	cfg.leave(1)
+	DPrintf("Test: leave 1")
 	cfg.join(0)
+	DPrintf("Test: join 0")
 
 	for i := 0; i < n; i++ {
 		check(t, ck, ka[i], va[i])
@@ -203,10 +212,12 @@ func TestSnapshot(t *testing.T) {
 	cfg.ShutdownGroup(0)
 	cfg.ShutdownGroup(1)
 	cfg.ShutdownGroup(2)
+	DPrintf("Test: shutdown group 0, 1, 2")
 
 	cfg.StartGroup(0)
 	cfg.StartGroup(1)
 	cfg.StartGroup(2)
+	DPrintf("Test: start group 0, 1, 2")
 
 	for i := 0; i < n; i++ {
 		check(t, ck, ka[i], va[i])
@@ -224,6 +235,7 @@ func TestMissChange(t *testing.T) {
 	ck := cfg.makeClient()
 
 	cfg.join(0)
+	DPrintf("Test: join 0")
 
 	n := 10
 	ka := make([]string, n)
@@ -242,10 +254,12 @@ func TestMissChange(t *testing.T) {
 	cfg.ShutdownServer(0, 0)
 	cfg.ShutdownServer(1, 0)
 	cfg.ShutdownServer(2, 0)
+	DPrintf("Test: shutdown server 0, 1, 2")
 
 	cfg.join(2)
 	cfg.leave(1)
 	cfg.leave(0)
+	DPrintf("Test: join 2, leave 1, leave 0")
 
 	for i := 0; i < n; i++ {
 		check(t, ck, ka[i], va[i])
@@ -255,6 +269,7 @@ func TestMissChange(t *testing.T) {
 	}
 
 	cfg.join(1)
+	DPrintf("Test: join 1")
 
 	for i := 0; i < n; i++ {
 		check(t, ck, ka[i], va[i])
@@ -266,6 +281,7 @@ func TestMissChange(t *testing.T) {
 	cfg.StartServer(0, 0)
 	cfg.StartServer(1, 0)
 	cfg.StartServer(2, 0)
+	DPrintf("Test: start server 0, 1, 2")
 
 	for i := 0; i < n; i++ {
 		check(t, ck, ka[i], va[i])
@@ -279,6 +295,7 @@ func TestMissChange(t *testing.T) {
 	cfg.ShutdownServer(0, 1)
 	cfg.ShutdownServer(1, 1)
 	cfg.ShutdownServer(2, 1)
+	DPrintf("Test: shutdown server 0, 1, 2")
 
 	cfg.join(0)
 	cfg.leave(2)
@@ -293,6 +310,7 @@ func TestMissChange(t *testing.T) {
 	cfg.StartServer(0, 1)
 	cfg.StartServer(1, 1)
 	cfg.StartServer(2, 1)
+	DPrintf("Test: start server 0, 1, 2")
 
 	for i := 0; i < n; i++ {
 		check(t, ck, ka[i], va[i])

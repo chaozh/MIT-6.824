@@ -45,7 +45,7 @@ type Clerk struct {
 	make_end func(string) *labrpc.ClientEnd
 	// You will have to modify this struct.
 	clientId int64
-	seq      int64 // sequence number for each client
+	seq      [shardctrler.NShards]int64 // sequence number for each client
 }
 
 //
@@ -77,19 +77,22 @@ func (ck *Clerk) Get(key string) string {
 	args := GetArgs{}
 	args.Key = key
 	args.ClientID = ck.clientId
-	args.Seq = atomic.AddInt64(&ck.seq, 1)
+
 	args.ConfigNum = ck.config.Num
 
 	for {
 		shard := key2shard(key)
 		gid := ck.config.Shards[shard]
+		args.Seq = atomic.AddInt64(&ck.seq[shard], 1)
 		if servers, ok := ck.config.Groups[gid]; ok {
 			// try each server for the shard.
 			for si := 0; si < len(servers); si++ {
 				srv := ck.make_end(servers[si])
 				var reply GetReply
+				DPrintf("[%d] Get: %s, %s, %d, %d", ck.clientId, key, servers[si], args.Seq, args.ConfigNum)
 				ok := srv.Call("ShardKV.Get", &args, &reply)
 				if ok && (reply.Err == OK || reply.Err == ErrNoKey) {
+					DPrintf("[%d] Get: %s, %s, %d, %d, %s , Err:%s", ck.clientId, key, servers[si], args.Seq, args.ConfigNum, reply.Value, reply.Err)
 					return reply.Value
 				}
 				if ok && (reply.Err == ErrWrongGroup) {
@@ -98,7 +101,7 @@ func (ck *Clerk) Get(key string) string {
 				// ... not ok, or ErrWrongLeader
 			}
 		}
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 		// ask controler for the latest configuration.
 		ck.config = ck.sm.Query(-1)
 		args.ConfigNum = ck.config.Num
@@ -118,15 +121,16 @@ func (ck *Clerk) PutAppend(key string, value string, op string) {
 	args.Op = op
 	args.ClientID = ck.clientId
 	args.ConfigNum = ck.config.Num
-	args.Seq = atomic.AddInt64(&ck.seq, 1)
 
 	for {
 		shard := key2shard(key)
 		gid := ck.config.Shards[shard]
+		args.Seq = atomic.AddInt64(&ck.seq[shard], 1)
 		if servers, ok := ck.config.Groups[gid]; ok {
 			for si := 0; si < len(servers); si++ {
 				srv := ck.make_end(servers[si])
 				var reply PutAppendReply
+				DPrintf("[%d] PutAppend: %s, %s, %d, %d", ck.clientId, key, servers[si], args.Seq, args.ConfigNum)
 				ok := srv.Call("ShardKV.PutAppend", &args, &reply)
 				if ok && reply.Err == OK {
 					return
@@ -137,7 +141,7 @@ func (ck *Clerk) PutAppend(key string, value string, op string) {
 				// ... not ok, or ErrWrongLeader
 			}
 		}
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 		// ask controler for the latest configuration.
 		ck.config = ck.sm.Query(-1)
 		args.ConfigNum = ck.config.Num

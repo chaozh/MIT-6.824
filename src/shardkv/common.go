@@ -50,13 +50,12 @@ type GetReply struct {
 	Value string
 }
 
-type ShardArg struct {
-	Shard     int
+type PushShardArgs struct {
+	Shade     ShardComponent
 	ConfigNum int
 }
 
-type ShardReply struct {
-	Err      Err
-	ShardMap map[string]string
-	SeqMap   map[int64]int64
+type PushShardReply struct {
+	Err       Err
+	ConfigNum int
 }
