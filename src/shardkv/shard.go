@@ -119,8 +119,8 @@ func (kv *ShardKV) PushShard(args *PushShardArgs, reply *PushShardReply) {
 
 func (kv *ShardKV) pushShard(shade ShardComponent) {
 	kv.mu.Lock()
-	defer kv.mu.Unlock()
 	if _, isleader := kv.rf.GetState(); !isleader {
+		kv.mu.Unlock()
 		return
 	}
 	DPrintf("[%d,%d,%d]: pushShard: %d", kv.gid, kv.me, kv.config.Num, shade.ShardIndex)
@@ -131,7 +131,7 @@ func (kv *ShardKV) pushShard(shade ShardComponent) {
 	}
 	group := kv.config.Shards[shade.ShardIndex]
 	if group == kv.gid {
-		DPrintf("[%d,%d,%d]: putShard to self: %d", kv.gid, kv.me, kv.config.Num, shade.ShardIndex)
+		kv.mu.Unlock()
 		return
 	}
 	if servers, ok := kv.config.Groups[group]; ok {
@@ -150,21 +150,23 @@ func (kv *ShardKV) pushShard(shade ShardComponent) {
 				}
 				kv.mu.Unlock()
 				kv.rf.Start(sop)
-				kv.mu.Lock()
 				return
 			}
 			if ok && reply.Err == ErrConfigOutOfDate {
 				DPrintf("[%d,%d,%d]: pushShard out of date: %d", kv.gid, kv.me, kv.config.Num, shade.ShardIndex)
+				kv.mu.Unlock()
 				return
 			}
 			if ok && reply.Err == ErrWrongGroup {
 				DPrintf("[%d,%d,%d]: pushShard wrong group: %d", kv.gid, kv.me, kv.config.Num, shade.ShardIndex)
+				kv.mu.Unlock()
 				return
 			}
 			// wrong leader or timeout
 			DPrintf("[%d,%d,%d]: pushShard to %d:%d failed: %d,%s", kv.gid, kv.me, kv.config.Num, group, i, shade.ShardIndex, reply.Err)
 		}
 	}
+	kv.mu.Unlock()
 	DPrintf("[%d,%d,%d]: pushShard to group %d failed: %d", kv.gid, kv.me, kv.config.Num, group, shade.ShardIndex)
 }
 
@@ -179,6 +181,7 @@ func (kv *ShardKV) ApplyShardOp(op ShardOp, raftindex int) {
 		}
 	}()
 	// makesnapshot := false
+
 	switch op.Optype {
 	case "PutShard":
 		kv.mu.Lock()
@@ -186,8 +189,7 @@ func (kv *ShardKV) ApplyShardOp(op ShardOp, raftindex int) {
 		if kv.kvDB[op.Shade.ShardIndex].State != waitMigrate {
 			DPrintf("[%d,%d,%d]: ApplyShardOp shade not wait migrate: %d,%s", kv.gid, kv.me, kv.config.Num, op.Shade.ShardIndex, kv.kvDB[op.Shade.ShardIndex].State)
 			err = ErrWrongLeader
-			kv.mu.Unlock()
-			return
+			break
 		}
 		kv.kvDB[op.Shade.ShardIndex] = op.Shade
 		if kv.config.Shards[op.Shade.ShardIndex] != kv.gid {
@@ -203,9 +205,6 @@ func (kv *ShardKV) ApplyShardOp(op ShardOp, raftindex int) {
 		kv.gcShard(op)
 	case "ValidateShard":
 		kv.validateShard(op)
-	}
-	if kv.maxraftstate != -1 {
-		kv.TryMakeSnapshot(raftindex, false)
 	}
 }
 

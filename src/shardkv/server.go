@@ -272,6 +272,9 @@ func (kv *ShardKV) ApplyCommandMsg(msg raft.ApplyMsg) {
 		sop := msg.Command.(ShardOp)
 		kv.ApplyShardOp(sop, msg.CommandIndex)
 	}
+	if kv.maxraftstate != -1 {
+		kv.TryMakeSnapshot(msg.CommandIndex, false)
+	}
 }
 
 func (kv *ShardKV) ApplyDBOp(op Op, raftindex int) {
@@ -328,10 +331,6 @@ func (kv *ShardKV) ApplyDBOp(op Op, raftindex int) {
 		kv.kvDB[shard].ClientSeq[op.ClientID] = Max(kv.kvDB[shard].ClientSeq[op.ClientID], op.Seq)
 	}
 	kv.mu.Unlock()
-
-	if kv.maxraftstate != -1 {
-		kv.TryMakeSnapshot(raftindex, false)
-	}
 }
 
 func (kv *ShardKV) putAppend(op Op, shard int) string {
