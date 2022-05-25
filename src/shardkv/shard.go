@@ -119,8 +119,8 @@ func (kv *ShardKV) PushShard(args *PushShardArgs, reply *PushShardReply) {
 
 func (kv *ShardKV) pushShard(shade ShardComponent) {
 	kv.mu.Lock()
+	defer kv.mu.Unlock()
 	if _, isleader := kv.rf.GetState(); !isleader {
-		kv.mu.Unlock()
 		return
 	}
 	DPrintf("[%d,%d,%d]: pushShard: %d", kv.gid, kv.me, kv.config.Num, shade.ShardIndex)
@@ -132,48 +132,38 @@ func (kv *ShardKV) pushShard(shade ShardComponent) {
 	group := kv.config.Shards[shade.ShardIndex]
 	if group == kv.gid {
 		DPrintf("[%d,%d,%d]: putShard to self: %d", kv.gid, kv.me, kv.config.Num, shade.ShardIndex)
-		kv.mu.Unlock()
 		return
 	}
-	kv.mu.Unlock()
 	if servers, ok := kv.config.Groups[group]; ok {
 		for i := 0; i < len(servers); i++ {
 			srv := kv.make_end(servers[i])
 			reply := PushShardReply{}
+			kv.mu.Unlock()
 			ok := srv.Call("ShardKV.PushShard", &args, &reply)
+			kv.mu.Lock()
 			if ok && reply.Err == OK {
 				DPrintf("[%d,%d,%d]: pushShard done: %d->%d", kv.gid, kv.me, kv.config.Num, shade.ShardIndex, group)
-				kv.mu.Lock()
 				sop := ShardOp{
 					Optype:    GCShard,
 					Shade:     shade,
 					Confignum: kv.config.Num,
 				}
-				kv.mu.Unlock()
 				kv.rf.Start(sop)
 				return
 			}
 			if ok && reply.Err == ErrConfigOutOfDate {
-				kv.mu.Lock()
 				DPrintf("[%d,%d,%d]: pushShard out of date: %d", kv.gid, kv.me, kv.config.Num, shade.ShardIndex)
-				kv.mu.Unlock()
 				return
 			}
 			if ok && reply.Err == ErrWrongGroup {
-				kv.mu.Lock()
 				DPrintf("[%d,%d,%d]: pushShard wrong group: %d", kv.gid, kv.me, kv.config.Num, shade.ShardIndex)
-				kv.mu.Unlock()
 				return
 			}
 			// wrong leader or timeout
-			kv.mu.Lock()
 			DPrintf("[%d,%d,%d]: pushShard to %d:%d failed: %d,%s", kv.gid, kv.me, kv.config.Num, group, i, shade.ShardIndex, reply.Err)
-			kv.mu.Unlock()
 		}
 	}
-	kv.mu.Lock()
 	DPrintf("[%d,%d,%d]: pushShard to group %d failed: %d", kv.gid, kv.me, kv.config.Num, group, shade.ShardIndex)
-	kv.mu.Unlock()
 }
 
 func (kv *ShardKV) ApplyShardOp(op ShardOp, raftindex int) {
