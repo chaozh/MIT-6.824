@@ -138,7 +138,9 @@ func (kv *ShardKV) pushShard(shade ShardComponent) {
 		for i := 0; i < len(servers); i++ {
 			srv := kv.make_end(servers[i])
 			reply := PushShardReply{}
+			kv.mu.Unlock()
 			ok := srv.Call("ShardKV.PushShard", &args, &reply) //don't unlock
+			kv.mu.Lock()
 			if ok && reply.Err == OK {
 				DPrintf("[%d,%d,%d]: pushShard done: %d->%d", kv.gid, kv.me, kv.config.Num, shade.ShardIndex, group)
 				sop := ShardOp{
@@ -249,16 +251,16 @@ func (kv *ShardKV) checkShadeMigrate(oldcfg shardctrler.Config) {
 				kv.kvDB[shard].State = waitMigrate
 			case migrating:
 				DPrintf("[%d,%d,%d]: checkShadeMigrate migrating to vaild: %d,%s", kv.gid, kv.me, kv.config.Num, shard, kv.kvDB[shard].State)
-				// sop := ShardOp{
-				// 	Optype: "ValidateShard",
-				// 	Shade: ShardComponent{
-				// 		ShardIndex: shard,
-				// 	},
-				// }
-				// kv.mu.Unlock()
-				// kv.rf.Start(sop)
-				// kv.mu.Lock()
-				kv.kvDB[shard].State = valid
+				sop := ShardOp{
+					Optype: "ValidateShard",
+					Shade: ShardComponent{
+						ShardIndex: shard,
+					},
+				}
+				kv.mu.Unlock()
+				kv.rf.Start(sop)
+				kv.mu.Lock()
+				// kv.kvDB[shard].State = valid
 			}
 		}
 		if oldcfg.Shards[shard] == kv.gid {
