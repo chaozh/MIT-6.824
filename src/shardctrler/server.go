@@ -98,7 +98,7 @@ func (sc *ShardCtrler) Query(args *QueryArgs, reply *QueryReply) {
 	}
 	sc.mu.Lock()
 	cfg := sc.configs[len(sc.configs)-1]
-	if args.Num != -1 {
+	if args.Num != -1 && args.Num < len(sc.configs) {
 		cfg = sc.configs[args.Num]
 	}
 	DPrintf("%d: Query:%v,reply:%v,\n%v", sc.me, args, reply, sc.configs)

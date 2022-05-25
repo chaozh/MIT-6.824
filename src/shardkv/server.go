@@ -341,6 +341,8 @@ func (kv *ShardKV) ApplyDBOp(op Op, raftindex int) {
 				value, keyexist = kv.kvDB[shard].KVDBofShard[op.Key]
 				if !keyexist {
 					err = ErrNoKey
+					kv.mu.Unlock()
+					return
 				}
 				DPrintf("[%d,%d,%d]: ApplyCommandMsg Do Get: %s->'%s'", kv.gid, kv.me, kv.config.Num, op.Key, value)
 				kv.mu.Unlock()
@@ -435,7 +437,9 @@ func (kv *ShardKV) TryMakeSnapshot(raftIndex int, force bool) {
 	e.Encode(kv.kvNeedSend)
 	e.Encode(kv.config)
 	data := w.Bytes()
+	kv.mu.Unlock()
 	kv.rf.Snapshot(raftIndex, data)
+	kv.mu.Lock()
 }
 
 func (kv *ShardKV) ticker() {
@@ -458,7 +462,7 @@ func (kv *ShardKV) checkconfig() {
 	// 		return
 	// 	}
 	// }
-	newcfg := kv.mck.Query(-1)
+	newcfg := kv.mck.Query(kv.config.Num + 1)
 	if newcfg.Num <= kv.config.Num {
 		return
 	}
