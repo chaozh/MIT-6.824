@@ -4,3 +4,4 @@ api.key
 *-handin.tar.gz
 *.log
 .vscode/MIT-6.824.code-workspace
+src/shardkv/tester

@@ -35,7 +35,7 @@ func (kv *ShardKV) ReadSnapShot(data []byte) {
 	}
 	kv.kvDB = tmpkvDB
 	kv.config = tmpConfig
-	DPrintf("[%d,%d,%d]: ReadSnapShot: %v,%v", kv.gid, kv.me, kv.config.Num, kv.kvDB)
+	DPrintf("[%d,%d,%d]: ReadSnapShot: %v", kv.gid, kv.me, kv.config.Num, kv.kvDB)
 }
 
 func (kv *ShardKV) TryMakeSnapshot(raftIndex int, force bool) {

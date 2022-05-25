@@ -197,7 +197,9 @@ func (kv *ShardKV) ApplyShardOp(op ShardOp, raftindex int) {
 		DPrintf("[%d,%d,%d]: ApplyShardOp done: %d,raftIndex:%d,shade:%d", kv.gid, kv.me, kv.config.Num, op.Shade.ShardIndex, raftindex, op.Shade.ShardIndex)
 		err = OK
 		kv.mu.Unlock()
-		kv.TryMakeSnapshot(raftindex, true)
+		if kv.maxraftstate != -1 {
+			kv.TryMakeSnapshot(raftindex, true)
+		}
 	case "GCShard":
 		kv.gcShard(op)
 	case "ValidateShard":
