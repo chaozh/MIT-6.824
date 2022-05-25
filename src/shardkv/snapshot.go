@@ -14,7 +14,7 @@ func (kv *ShardKV) ApplySnapshotMsg(msg raft.ApplyMsg) {
 	if !kv.rf.CondInstallSnapshot(msg.SnapshotTerm, msg.SnapshotIndex, msg.Snapshot) {
 		return
 	}
-	DPrintf("[%d,%d,%d]: ApplySnapshotMsg: InstallSnapshot", kv.gid, kv.me)
+	DPrintf("[%d,%d,%d]: ApplySnapshotMsg: InstallSnapshot", kv.gid, kv.me, kv.config.Num)
 	kv.ReadSnapShot(msg.Snapshot)
 	kv.RaftlastIncludedIndex = msg.SnapshotIndex
 }
@@ -49,7 +49,5 @@ func (kv *ShardKV) TryMakeSnapshot(raftIndex int, force bool) {
 	e.Encode(DBdeepcopy(kv.kvDB))
 	e.Encode(kv.config)
 	data := w.Bytes()
-	kv.mu.Unlock()
 	kv.rf.Snapshot(raftIndex, data)
-	kv.mu.Lock()
 }

@@ -23,4 +23,9 @@ func (kv *ShardKV) ApplyConfigOp(op ConfigOp, raftindex int) {
 	oldcfg := kv.config
 	kv.config = op.Config
 	kv.checkShadeMigrate(oldcfg)
+	if kv.maxraftstate != -1 {
+		kv.mu.Unlock()
+		kv.TryMakeSnapshot(raftindex, false)
+		kv.mu.Lock()
+	}
 }
