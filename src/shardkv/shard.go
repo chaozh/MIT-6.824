@@ -140,7 +140,6 @@ func (kv *ShardKV) pushShard(shade ShardComponent) {
 		for i := 0; i < len(servers); i++ {
 			srv := kv.make_end(servers[i])
 			reply := PushShardReply{}
-			DPrintf("[%d,%d,%d]: pushShard to %s", kv.gid, kv.me, kv.config.Num, servers[i])
 			ok := srv.Call("ShardKV.PushShard", &args, &reply)
 			if ok && reply.Err == OK {
 				DPrintf("[%d,%d,%d]: pushShard done: %d->%d", kv.gid, kv.me, kv.config.Num, shade.ShardIndex, group)
@@ -193,7 +192,7 @@ func (kv *ShardKV) ApplyShardOp(op ShardOp, raftindex int) {
 		DPrintf("[%d,%d,%d]: ApplyShardOp: %d,raftIndex:%d", kv.gid, kv.me, kv.config.Num, op.Shade.ShardIndex, raftindex)
 		if kv.kvDB[op.Shade.ShardIndex].State != waitMigrate {
 			DPrintf("[%d,%d,%d]: ApplyShardOp shade not wait migrate: %d,%s", kv.gid, kv.me, kv.config.Num, op.Shade.ShardIndex, kv.kvDB[op.Shade.ShardIndex].State)
-			err = OK
+			err = ErrWrongLeader
 			kv.mu.Unlock()
 			return
 		}
