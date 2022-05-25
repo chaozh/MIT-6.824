@@ -26,11 +26,9 @@ func (kv *ShardKV) ReadSnapShot(data []byte) {
 	}
 	var tmpkvDB [shardctrler.NShards]ShardComponent
 	var tmpConfig shardctrler.Config
-	var tmpNeedSend [shardctrler.NShards]bool
 	r := bytes.NewBuffer(data)
 	d := labgob.NewDecoder(r)
 	if d.Decode(&tmpkvDB) != nil ||
-		d.Decode(&tmpNeedSend) != nil ||
 		d.Decode(&tmpConfig) != nil {
 		DPrintf("[%d,%d,%d]: ReadSnapShot: decode error", kv.gid, kv.me)
 		return

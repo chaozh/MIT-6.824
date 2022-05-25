@@ -100,7 +100,7 @@ func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
 
 	shard := key2shard(args.Key)
 	if kv.config.Shards[shard] != kv.gid ||
-		kv.kvDB[shard].State == unvalid ||
+		kv.kvDB[shard].State == invalid ||
 		kv.kvDB[shard].State == migrating {
 		DPrintf("[%d,%d,%d]: Get Wrong Group: %s,shade:%d", kv.gid, kv.me, kv.config.Num, args.Key, shard)
 		reply.Err = ErrWrongGroup
@@ -143,14 +143,12 @@ func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
 	select {
 	case waitmsg := <-chForIndex:
 		if waitmsg.Op.Key != args.Key || waitmsg.Op.ClientID != args.ClientID || waitmsg.Op.Seq != args.Seq {
-			DPrintf("[%d,%d,%d]: Get Wrong RPC: %s, %s", kv.gid, kv.me, kv.config.Num, args.Key, waitmsg.Err)
 			reply.Err = ErrWrongLeader
 			return
 		}
 		if waitmsg.Err == OK {
 			kv.mu.Lock()
 			reply.Value = kv.kvDB[shard].KVDBofShard[args.Key]
-			DPrintf("[%d,%d,%d]: Get RPC: %s->'%s'", kv.gid, kv.me, kv.config.Num, args.Key, reply.Value)
 			kv.mu.Unlock()
 			reply.Err = OK
 		} else {
@@ -177,7 +175,7 @@ func (kv *ShardKV) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 	}
 	shard := key2shard(args.Key)
 	if kv.config.Shards[shard] != kv.gid ||
-		kv.kvDB[shard].State == unvalid ||
+		kv.kvDB[shard].State == invalid ||
 		kv.kvDB[shard].State == migrating {
 		DPrintf("[%d,%d,%d]: PutAppend Wrong Group: %s", kv.gid, kv.me, kv.config.Num, args.Key)
 		reply.Err = ErrWrongGroup
@@ -221,11 +219,9 @@ func (kv *ShardKV) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 	select {
 	case waitmsg := <-chForIndex:
 		if waitmsg.Op.Key != args.Key || waitmsg.Op.ClientID != args.ClientID || waitmsg.Op.Seq != args.Seq {
-			DPrintf("[%d,%d,%d]: Put Append Wrong RPC: %s, %s", kv.gid, kv.me, kv.config.Num, args.Key, waitmsg.Err)
 			reply.Err = ErrWrongLeader
 			return
 		}
-		DPrintf("[%d,%d,%d]: Put Append %s RPC: %s->'%s', %s", kv.gid, kv.me, kv.config.Num, args.Op, args.Key, args.Value, waitmsg.Err)
 		reply.Err = waitmsg.Err
 		return
 	case <-time.After(time.Duration(500) * time.Millisecond):
@@ -316,12 +312,12 @@ func (kv *ShardKV) ApplyDBOp(op Op, raftindex int) {
 	case "Put":
 		fallthrough
 	case "Append":
-		if seq, exist := kv.kvDB[shard].ClientSeq[op.ClientID]; exist && seq < op.Seq {
+		if seq, exist := kv.kvDB[shard].ClientSeq[op.ClientID]; exist && seq >= op.Seq {
 			err = OK
 			break
 		}
 		if kv.config.Shards[shard] != kv.gid ||
-			kv.kvDB[shard].State == unvalid ||
+			kv.kvDB[shard].State == invalid ||
 			kv.kvDB[shard].State == migrating {
 			err = ErrWrongGroup
 			break
@@ -347,11 +343,11 @@ func (kv *ShardKV) putAppend(op Op, shard int) string {
 	}
 	switch op.OpType {
 	case "Put":
-		DPrintf("[%d,%d,%d]: putAppend Put: %s", kv.gid, kv.me, kv.config.Num, op.Key)
+		DPrintf("[%d,%d,%d]: putAppend Put: %s->%s", kv.gid, kv.me, kv.config.Num, op.Key, op.Value)
 		kv.kvDB[shard].KVDBofShard[op.Key] = op.Value
 		return kv.kvDB[shard].KVDBofShard[op.Key]
 	case "Append":
-		DPrintf("[%d,%d,%d]: putAppend Append: %s", kv.gid, kv.me, kv.config.Num, op.Key)
+		DPrintf("[%d,%d,%d]: putAppend Append: %s->%s", kv.gid, kv.me, kv.config.Num, op.Key, op.Value)
 		if _, exist := kv.kvDB[shard].KVDBofShard[op.Key]; !exist {
 			kv.kvDB[shard].KVDBofShard[op.Key] = ""
 		}
@@ -432,7 +428,7 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
 			ShardIndex:  shard,
 			KVDBofShard: make(map[string]string),
 			ClientSeq:   make(map[int64]int64),
-			State:       unvalid,
+			State:       invalid,
 		}
 	}
 

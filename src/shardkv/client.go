@@ -78,8 +78,6 @@ func (ck *Clerk) Get(key string) string {
 	args.Key = key
 	args.ClientID = ck.clientId
 
-	args.ConfigNum = ck.config.Num
-
 	for {
 		shard := key2shard(key)
 		gid := ck.config.Shards[shard]
@@ -89,10 +87,9 @@ func (ck *Clerk) Get(key string) string {
 			for si := 0; si < len(servers); si++ {
 				srv := ck.make_end(servers[si])
 				var reply GetReply
-				DPrintf("[%d] Get: %s, %s, %d, %d", ck.clientId, key, servers[si], args.Seq, args.ConfigNum)
 				ok := srv.Call("ShardKV.Get", &args, &reply)
 				if ok && (reply.Err == OK || reply.Err == ErrNoKey) {
-					DPrintf("[%d] Get: %s, %s, %d, %d, %s , Err:%s", ck.clientId, key, servers[si], args.Seq, args.ConfigNum, reply.Value, reply.Err)
+					DPrintf("%d: Get %s %s\n", ck.clientId, key, reply.Value)
 					return reply.Value
 				}
 				if ok && (reply.Err == ErrWrongGroup) {
@@ -104,7 +101,6 @@ func (ck *Clerk) Get(key string) string {
 		time.Sleep(500 * time.Millisecond)
 		// ask controler for the latest configuration.
 		ck.config = ck.sm.Query(-1)
-		args.ConfigNum = ck.config.Num
 	}
 
 	return ""
@@ -120,7 +116,6 @@ func (ck *Clerk) PutAppend(key string, value string, op string) {
 	args.Value = value
 	args.Op = op
 	args.ClientID = ck.clientId
-	args.ConfigNum = ck.config.Num
 
 	for {
 		shard := key2shard(key)
@@ -130,9 +125,9 @@ func (ck *Clerk) PutAppend(key string, value string, op string) {
 			for si := 0; si < len(servers); si++ {
 				srv := ck.make_end(servers[si])
 				var reply PutAppendReply
-				DPrintf("[%d] PutAppend: %s, %s, %d, %d", ck.clientId, key, servers[si], args.Seq, args.ConfigNum)
 				ok := srv.Call("ShardKV.PutAppend", &args, &reply)
 				if ok && reply.Err == OK {
+					DPrintf("%d: PutAppend %s %s %s\n", ck.clientId, key, value, op)
 					return
 				}
 				if ok && reply.Err == ErrWrongGroup {
@@ -144,7 +139,6 @@ func (ck *Clerk) PutAppend(key string, value string, op string) {
 		time.Sleep(500 * time.Millisecond)
 		// ask controler for the latest configuration.
 		ck.config = ck.sm.Query(-1)
-		args.ConfigNum = ck.config.Num
 	}
 }
 

@@ -13,17 +13,33 @@ const (
 )
 
 const (
-	unvalid = iota
+	invalid = iota
 	valid
 	migrating
 	waitMigrate
 )
 
+type shadestate int
+
+func (s shadestate) String() string {
+	switch s {
+	case invalid:
+		return "invalid"
+	case valid:
+		return "valid"
+	case migrating:
+		return "migrating"
+	case waitMigrate:
+		return "waitMigrate"
+	}
+	return "unknown"
+}
+
 type ShardComponent struct {
 	ShardIndex  int
 	KVDBofShard map[string]string
 	ClientSeq   map[int64]int64
-	State       int
+	State       shadestate
 }
 
 type ShardOp struct {
@@ -34,42 +50,46 @@ type ShardOp struct {
 
 func (kv *ShardKV) PushShard(args *PushShardArgs, reply *PushShardReply) {
 	kv.mu.Lock()
-	defer kv.mu.Unlock()
 	_, isleader := kv.rf.GetState()
 	reply.ConfigNum = kv.config.Num
 	if !isleader {
 		DPrintf("[%d,%d,%d]: PutShard Wrong Leader: %d", kv.gid, kv.me, kv.config.Num, args.Shade.ShardIndex)
 		reply.Err = ErrWrongLeader
+		kv.mu.Unlock()
 		return
 	}
 	if kv.config.Num < args.ConfigNum {
 		DPrintf("[%d,%d,%d]: PutShard Wrong Config: %d", kv.gid, kv.me, kv.config.Num, args.Shade.ShardIndex)
 		reply.Err = ErrWrongLeader
+		kv.mu.Unlock()
 		return
 	}
 	if kv.config.Num > args.ConfigNum {
 		DPrintf("[%d,%d,%d]: PutShard Out of Date: %d", kv.gid, kv.me, kv.config.Num, args.Shade.ShardIndex)
 		reply.Err = ErrConfigOutOfDate
+		kv.mu.Unlock()
 		return
 	}
-	if kv.config.Shards[args.Shade.ShardIndex] != kv.gid || kv.kvDB[args.Shade.ShardIndex].State != waitMigrate {
+	if kv.config.Shards[args.Shade.ShardIndex] != kv.gid || kv.kvDB[args.Shade.ShardIndex].State == invalid {
 		DPrintf("[%d,%d,%d]: PutShard Wrong Shard: %d", kv.gid, kv.me, kv.config.Num, args.Shade.ShardIndex)
 		reply.Err = ErrWrongGroup
+		kv.mu.Unlock()
 		return
 	}
 	if kv.kvDB[args.Shade.ShardIndex].State == migrating ||
 		kv.kvDB[args.Shade.ShardIndex].State == valid {
 		DPrintf("[%d,%d,%d]: PutShard Already Migrate: %d", kv.gid, kv.me, kv.config.Num, args.Shade.ShardIndex)
 		reply.Err = OK
+		kv.mu.Unlock()
 		return
 	}
 	//state is waitMigrate
-	kv.mu.Unlock()
 	sop := ShardOp{
 		Optype:    "PutShard",
 		Shade:     args.Shade,
 		Confignum: args.ConfigNum,
 	}
+	kv.mu.Unlock()
 	logindex, _, _ := kv.rf.Start(sop)
 
 	kv.mu.Lock()
@@ -85,14 +105,13 @@ func (kv *ShardKV) PushShard(args *PushShardArgs, reply *PushShardReply) {
 		delete(kv.WaitMap, logindex)
 		kv.mu.Unlock()
 	}()
+	kv.mu.Unlock()
 
 	select {
 	case msg := <-chForIndex:
-		DPrintf("[%d,%d,%d]: PutShard Done: %s", kv.gid, kv.me, kv.config.Num, msg.Err)
 		reply.Err = msg.Err
 		return
 	case <-time.After(time.Duration(3000) * time.Millisecond):
-		DPrintf("[%d,%d,%d]: PutShard Timeout: %d", kv.gid, kv.me, kv.config.Num, args.Shade.ShardIndex)
 		reply.Err = ErrWrongLeader
 		return
 	}
@@ -100,8 +119,8 @@ func (kv *ShardKV) PushShard(args *PushShardArgs, reply *PushShardReply) {
 
 func (kv *ShardKV) pushShard(shade ShardComponent) {
 	kv.mu.Lock()
-	defer kv.mu.Unlock()
 	if _, isleader := kv.rf.GetState(); !isleader {
+		kv.mu.Unlock()
 		return
 	}
 	DPrintf("[%d,%d,%d]: pushShard: %d", kv.gid, kv.me, kv.config.Num, shade.ShardIndex)
@@ -111,15 +130,21 @@ func (kv *ShardKV) pushShard(shade ShardComponent) {
 		ConfigNum: kv.config.Num,
 	}
 	group := kv.config.Shards[shade.ShardIndex]
+	if group == kv.gid {
+		DPrintf("[%d,%d,%d]: putShard to self: %d", kv.gid, kv.me, kv.config.Num, shade.ShardIndex)
+		kv.mu.Unlock()
+		return
+	}
+	kv.mu.Unlock()
 	if servers, ok := kv.config.Groups[group]; ok {
 		for i := 0; i < len(servers); i++ {
 			srv := kv.make_end(servers[i])
 			reply := PushShardReply{}
-			kv.mu.Unlock()
+			DPrintf("[%d,%d,%d]: pushShard to %s", kv.gid, kv.me, kv.config.Num, servers[i])
 			ok := srv.Call("ShardKV.PushShard", &args, &reply)
-			kv.mu.Lock()
 			if ok && reply.Err == OK {
-				DPrintf("[%d,%d,%d]: pushShard done: %d", kv.gid, kv.me, kv.config.Num, shade.ShardIndex)
+				DPrintf("[%d,%d,%d]: pushShard done: %d->%d", kv.gid, kv.me, kv.config.Num, shade.ShardIndex, group)
+				kv.mu.Lock()
 				sop := ShardOp{
 					Optype:    GCShard,
 					Shade:     shade,
@@ -127,62 +152,80 @@ func (kv *ShardKV) pushShard(shade ShardComponent) {
 				}
 				kv.mu.Unlock()
 				kv.rf.Start(sop)
-				kv.mu.Lock()
 				return
 			}
 			if ok && reply.Err == ErrConfigOutOfDate {
+				kv.mu.Lock()
 				DPrintf("[%d,%d,%d]: pushShard out of date: %d", kv.gid, kv.me, kv.config.Num, shade.ShardIndex)
+				kv.mu.Unlock()
 				return
 			}
 			if ok && reply.Err == ErrWrongGroup {
+				kv.mu.Lock()
 				DPrintf("[%d,%d,%d]: pushShard wrong group: %d", kv.gid, kv.me, kv.config.Num, shade.ShardIndex)
+				kv.mu.Unlock()
 				return
 			}
 			// wrong leader or timeout
+			kv.mu.Lock()
 			DPrintf("[%d,%d,%d]: pushShard to %d:%d failed: %d,%s", kv.gid, kv.me, kv.config.Num, group, i, shade.ShardIndex, reply.Err)
+			kv.mu.Unlock()
 		}
 	}
-	DPrintf("[%d,%d,%d]: pushShard to %d failed: %d", kv.gid, kv.me, kv.config.Num, group, shade.ShardIndex)
+	kv.mu.Lock()
+	DPrintf("[%d,%d,%d]: pushShard to group %d failed: %d", kv.gid, kv.me, kv.config.Num, group, shade.ShardIndex)
+	kv.mu.Unlock()
 }
 
 func (kv *ShardKV) ApplyShardOp(op ShardOp, raftindex int) {
-	kv.mu.Lock()
-	defer kv.mu.Unlock()
+	var err Err
+	defer func() {
+		kv.mu.Lock()
+		ch, channelexist := kv.WaitMap[raftindex]
+		kv.mu.Unlock()
+		if channelexist {
+			ch <- WaitMsg{Err: err}
+		}
+	}()
 	switch op.Optype {
 	case "PutShard":
+		kv.mu.Lock()
 		DPrintf("[%d,%d,%d]: ApplyShardOp: %d,raftIndex:%d", kv.gid, kv.me, kv.config.Num, op.Shade.ShardIndex, raftindex)
 		if kv.kvDB[op.Shade.ShardIndex].State != waitMigrate {
-			DPrintf("[%d,%d,%d]: ApplyShardOp shade not wait migrate: %d", kv.gid, kv.me, kv.config.Num, op.Shade.ShardIndex)
-			ch, channelexist := kv.WaitMap[raftindex]
-			if channelexist {
-				ch <- WaitMsg{Err: OK}
-			}
+			DPrintf("[%d,%d,%d]: ApplyShardOp shade not wait migrate: %d,%s", kv.gid, kv.me, kv.config.Num, op.Shade.ShardIndex, kv.kvDB[op.Shade.ShardIndex].State)
+			err = OK
+			kv.mu.Unlock()
 			return
 		}
 		kv.kvDB[op.Shade.ShardIndex] = op.Shade
-		kv.kvDB[op.Shade.ShardIndex].State = valid
-		DPrintf("[%d,%d,%d]: ApplyShardOp done: %d,raftIndex:%d,shade:%d", kv.gid, kv.me, kv.config.Num, op.Shade.ShardIndex, raftindex, op.Shade.ShardIndex)
-		ch, channelexist := kv.WaitMap[raftindex]
-		if channelexist {
-			ch <- WaitMsg{Err: OK}
+		if kv.config.Shards[op.Shade.ShardIndex] != kv.gid {
+			kv.kvDB[op.Shade.ShardIndex].State = migrating
+		} else {
+			kv.kvDB[op.Shade.ShardIndex].State = valid
 		}
+		DPrintf("[%d,%d,%d]: ApplyShardOp done: %d,raftIndex:%d,shade:%d", kv.gid, kv.me, kv.config.Num, op.Shade.ShardIndex, raftindex, op.Shade.ShardIndex)
+		err = OK
+		kv.mu.Unlock()
 	case "GCShard":
 		kv.gcShard(op)
 	}
 }
 
 func (kv *ShardKV) gcShard(op ShardOp) {
+	kv.mu.Lock()
 	if kv.kvDB[op.Shade.ShardIndex].State != migrating {
-		DPrintf("[%d,%d,%d]: shardGCOp shade not wait migrate: %d", kv.gid, kv.me, kv.config.Num, op.Shade.ShardIndex)
+		DPrintf("[%d,%d,%d]: shardGCOp shade not migrating: %d,%s", kv.gid, kv.me, kv.config.Num, op.Shade.ShardIndex, kv.kvDB[op.Shade.ShardIndex].State)
+		kv.mu.Unlock()
 		return
 	}
 	kv.kvDB[op.Shade.ShardIndex] = ShardComponent{
 		ShardIndex:  op.Shade.ShardIndex,
 		KVDBofShard: nil,
 		ClientSeq:   nil,
-		State:       unvalid,
+		State:       invalid,
 	}
 	DPrintf("[%d,%d,%d]: shardGCOp done: %d", kv.gid, kv.me, kv.config.Num, op.Shade.ShardIndex)
+	kv.mu.Unlock()
 }
 
 func (kv *ShardKV) checkShadeMigrate(oldcfg shardctrler.Config) {
@@ -195,12 +238,24 @@ func (kv *ShardKV) checkShadeMigrate(oldcfg shardctrler.Config) {
 				kv.kvDB[shard].State = valid
 				continue
 			}
-			DPrintf("[%d,%d,%d]: checkShade Wait Migrate: %d,%d->%d", kv.gid, kv.me, kv.config.Num, shard, oldcfg.Shards[shard], kv.config.Shards[shard])
-			kv.kvDB[shard].State = waitMigrate
+			switch kv.kvDB[shard].State {
+			case invalid:
+				DPrintf("[%d,%d,%d]: checkShadeMigrate: %d,%s", kv.gid, kv.me, kv.config.Num, shard, kv.kvDB[shard].State)
+				kv.kvDB[shard].State = waitMigrate
+			case migrating:
+				DPrintf("[%d,%d,%d]: checkShadeMigrate: %d,%s", kv.gid, kv.me, kv.config.Num, shard, kv.kvDB[shard].State)
+				kv.kvDB[shard].State = valid
+			}
 		}
 		if oldcfg.Shards[shard] == kv.gid {
-			DPrintf("[%d,%d,%d]: checkShade Need Migrate: %d,%d->%d", kv.gid, kv.me, kv.config.Num, shard, oldcfg.Shards[shard], kv.config.Shards[shard])
-			kv.kvDB[shard].State = migrating
+			switch kv.kvDB[shard].State {
+			case waitMigrate:
+				DPrintf("[%d,%d,%d]: checkShadeMigrate: %d,%s", kv.gid, kv.me, kv.config.Num, shard, kv.kvDB[shard].State)
+				kv.kvDB[shard].State = invalid
+			case valid:
+				DPrintf("[%d,%d,%d]: checkShadeMigrate: %d,%s", kv.gid, kv.me, kv.config.Num, shard, kv.kvDB[shard].State)
+				kv.kvDB[shard].State = migrating
+			}
 		}
 	}
 }
