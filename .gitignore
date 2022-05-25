@@ -3,3 +3,4 @@ api.key
 .api.key.trimmed
 *-handin.tar.gz
 *.log
+.vscode/MIT-6.824.code-workspace
