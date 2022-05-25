@@ -1,7 +1,6 @@
 package shardkv
 
 import (
-	"bytes"
 	"log"
 	"strings"
 	"sync"
@@ -59,13 +58,6 @@ const (
 	ReadyPush
 )
 
-type ShardComponent struct {
-	ShardIndex   int
-	KVDBofShard  map[string]string
-	ClientSeq    map[int64]int64
-	IsMigrateing bool
-}
-
 type ShardKV struct {
 	mu                    sync.Mutex
 	me                    int
@@ -81,59 +73,57 @@ type ShardKV struct {
 	config                shardctrler.Config
 
 	// Your definitions here.
-	kvDB       [shardctrler.NShards]ShardComponent
-	kvNeedSend [shardctrler.NShards]bool // shard index -> group index
+	kvDB [shardctrler.NShards]ShardComponent
 
 	WaitMap map[int]chan WaitMsg //key:index in raft, value:channel
 }
 
 type WaitMsg struct {
-	Err Err
-	Op  Op
+	Optype string
+	Err    Err
+	Op     Op
+	Sop    ShardOp
+	Cop    ConfigOp
 }
 
 func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
 	// Your code here.
 
+	kv.mu.Lock()
 	_, ifLeader := kv.rf.GetState()
 	if !ifLeader {
 		DPrintf("[%d,%d,%d]: Get Wrong Leader: %s", kv.gid, kv.me, kv.config.Num, args.Key)
 		reply.Err = ErrWrongLeader
-		return
-	}
-
-	kv.mu.Lock()
-	if kv.config.Num < args.ConfigNum {
-		DPrintf("[%d,%d,%d]: Get Wrong Config: %d,%d", kv.gid, kv.me, kv.config.Num, args.ConfigNum, kv.config.Num)
-		reply.Err = ErrWrongLeader
 		kv.mu.Unlock()
 		return
 	}
+
 	shard := key2shard(args.Key)
-	if kv.config.Shards[shard] != kv.gid {
+	if kv.config.Shards[shard] != kv.gid ||
+		kv.kvDB[shard].State == unvalid ||
+		kv.kvDB[shard].State == migrating {
 		DPrintf("[%d,%d,%d]: Get Wrong Group: %s,shade:%d", kv.gid, kv.me, kv.config.Num, args.Key, shard)
 		reply.Err = ErrWrongGroup
 		kv.mu.Unlock()
 		return
 	}
-	if kv.kvDB[shard].IsMigrateing {
+	if kv.kvDB[shard].State == waitMigrate {
 		DPrintf("[%d,%d,%d]: Get Shard no ready: %s,shade:%d", kv.gid, kv.me, kv.config.Num, args.Key, shard)
 		reply.Err = ErrWrongLeader
 		kv.mu.Unlock()
 		return
 	}
-	kv.mu.Unlock()
+	// state == vaild
 
-	kv.mu.Lock()
 	op := Op{
 		OpType:    "Get",
 		Key:       args.Key,
 		ClientID:  args.ClientID,
 		Seq:       args.Seq,
-		ConfigNum: args.ConfigNum,
+		ConfigNum: kv.config.Num,
 	}
-	logindex, _, _ := kv.rf.Start(op)
 	kv.mu.Unlock()
+	logindex, _, _ := kv.rf.Start(op)
 
 	kv.mu.Lock()
 	DPrintf("[%d,%d,%d]: Get: %s", kv.gid, kv.me, kv.config.Num, args.Key)
@@ -159,24 +149,6 @@ func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
 		}
 		if waitmsg.Err == OK {
 			kv.mu.Lock()
-			if kv.config.Shards[shard] != kv.gid {
-				DPrintf("[%d,%d,%d]: Get Wrong Group: %s", kv.gid, kv.me, kv.config.Num, args.Key)
-				reply.Err = ErrWrongGroup
-				kv.mu.Unlock()
-				return
-			}
-			if kv.kvDB[shard].IsMigrateing {
-				DPrintf("[%d,%d,%d]: Get Shard no ready: %s", kv.gid, kv.me, kv.config.Num, args.Key)
-				reply.Err = ErrWrongLeader
-				kv.mu.Unlock()
-				return
-			}
-			if waitmsg.Op.ConfigNum != kv.config.Num {
-				DPrintf("[%d,%d,%d]: Get Wrong Config: %d,%d", kv.gid, kv.me, kv.config.Num, args.ConfigNum, kv.config.Num)
-				reply.Err = ErrWrongLeader
-				kv.mu.Unlock()
-				return
-			}
 			reply.Value = kv.kvDB[shard].KVDBofShard[args.Key]
 			DPrintf("[%d,%d,%d]: Get RPC: %s->'%s'", kv.gid, kv.me, kv.config.Num, args.Key, reply.Value)
 			kv.mu.Unlock()
@@ -195,33 +167,30 @@ func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
 func (kv *ShardKV) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 	// Your code here.
 
+	kv.mu.Lock()
 	_, ifLeader := kv.rf.GetState()
 	if !ifLeader {
 		DPrintf("[%d,%d,%d]: PutAppend Wrong Leader: %s", kv.gid, kv.me, kv.config.Num, args.Key)
-		reply.Err = ErrWrongLeader
-		return
-	}
-	kv.mu.Lock()
-	if kv.config.Num < args.ConfigNum {
-		DPrintf("[%d,%d,%d]: PutAppend Wrong Config: %d,kv.config.Num:%d", kv.gid, kv.me, kv.config.Num, args.ConfigNum, kv.config.Num)
 		reply.Err = ErrWrongLeader
 		kv.mu.Unlock()
 		return
 	}
 	shard := key2shard(args.Key)
-	if kv.config.Shards[shard] != kv.gid {
+	if kv.config.Shards[shard] != kv.gid ||
+		kv.kvDB[shard].State == unvalid ||
+		kv.kvDB[shard].State == migrating {
 		DPrintf("[%d,%d,%d]: PutAppend Wrong Group: %s", kv.gid, kv.me, kv.config.Num, args.Key)
 		reply.Err = ErrWrongGroup
 		kv.mu.Unlock()
 		return
 	}
-	if kv.kvDB[shard].IsMigrateing {
+	if kv.kvDB[shard].State == waitMigrate {
 		DPrintf("[%d,%d,%d]: Get Shard no ready: %s", kv.gid, kv.me, kv.config.Num, args.Key)
 		reply.Err = ErrWrongLeader
 		kv.mu.Unlock()
 		return
 	}
-	kv.mu.Unlock()
+	// state == vaild
 
 	op := Op{
 		OpType:    args.Op,
@@ -229,8 +198,9 @@ func (kv *ShardKV) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 		ClientID:  args.ClientID,
 		Seq:       args.Seq,
 		Value:     args.Value,
-		ConfigNum: args.ConfigNum,
+		ConfigNum: kv.config.Num,
 	}
+	kv.mu.Unlock()
 	index, _, _ := kv.rf.Start(op)
 
 	kv.mu.Lock()
@@ -274,7 +244,7 @@ func (kv *ShardKV) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 func (kv *ShardKV) Kill() {
 	kv.rf.Kill()
 	atomic.StoreInt32(&kv.dead, 1)
-	DPrintf("[%d,%d,%d]: Kill", kv.gid, kv.me)
+	DPrintf("[%d,%d,%d]: Kill", kv.gid, kv.me, kv.config.Num)
 	// Your code here, if desired.
 }
 
@@ -320,52 +290,52 @@ func (kv *ShardKV) ApplyDBOp(op Op, raftindex int) {
 
 	defer func() {
 		kv.mu.Lock()
+		defer kv.mu.Unlock()
 		ch, channelexist := kv.WaitMap[raftindex]
 		if channelexist {
 			DPrintf("[%d,%d,%d]: ApplyCommandMsg: %s: %s->'%s', %s'", kv.gid, kv.me, kv.config.Num, op.OpType, op.Key, value, err)
 			DPrintf("[%d,%d,%d]: Applier send: %s->'%s'", kv.gid, kv.me, kv.config.Num, op.Key, value)
-			kv.mu.Unlock()
 			ch <- WaitMsg{Err: err, Op: op}
-			return
 		}
-		kv.mu.Unlock()
 	}()
 
 	shard := key2shard(op.Key)
 
-	if seq, exist := kv.kvDB[shard].ClientSeq[op.ClientID]; !exist || seq < op.Seq {
-		switch op.OpType {
-		case "Get":
-			{
-				kv.mu.Lock()
-				value, keyexist = kv.kvDB[shard].KVDBofShard[op.Key]
-				if !keyexist {
-					err = ErrNoKey
-					kv.mu.Unlock()
-					return
-				}
-				DPrintf("[%d,%d,%d]: ApplyCommandMsg Do Get: %s->'%s'", kv.gid, kv.me, kv.config.Num, op.Key, value)
-				kv.mu.Unlock()
+	kv.mu.Lock()
+	switch op.OpType {
+	case "Get":
+		{
+			value, keyexist = kv.kvDB[shard].KVDBofShard[op.Key]
+			DPrintf("[%d,%d,%d]: ApplyCommandMsg Do Get: %s->'%s'", kv.gid, kv.me, kv.config.Num, op.Key, value)
+			if !keyexist {
+				err = ErrNoKey
+				break
 			}
-
-		case "Put":
-			{
-				kv.mu.Lock()
-				value = kv.putAppend(op, shard)
-				kv.mu.Unlock()
-			}
-		case "Append":
-			{
-				kv.mu.Lock()
-				value = kv.putAppend(op, shard)
-				kv.mu.Unlock()
-			}
+			err = OK
 		}
-		kv.mu.Lock()
+	case "Put":
+		fallthrough
+	case "Append":
+		if seq, exist := kv.kvDB[shard].ClientSeq[op.ClientID]; exist && seq < op.Seq {
+			err = OK
+			break
+		}
+		if kv.config.Shards[shard] != kv.gid ||
+			kv.kvDB[shard].State == unvalid ||
+			kv.kvDB[shard].State == migrating {
+			err = ErrWrongGroup
+			break
+		}
+		if kv.kvDB[shard].State == waitMigrate {
+			err = ErrWrongLeader
+			break
+		}
+		value = kv.putAppend(op, shard)
+		err = OK
 		kv.kvDB[shard].ClientSeq[op.ClientID] = Max(kv.kvDB[shard].ClientSeq[op.ClientID], op.Seq)
-		kv.mu.Unlock()
 	}
-	err = OK
+	kv.mu.Unlock()
+
 	if kv.maxraftstate != -1 {
 		kv.TryMakeSnapshot(raftindex, false)
 	}
@@ -392,55 +362,6 @@ func (kv *ShardKV) putAppend(op Op, shard int) string {
 }
 
 // Get snapshot from applyCh
-func (kv *ShardKV) ApplySnapshotMsg(msg raft.ApplyMsg) {
-	kv.mu.Lock()
-	defer kv.mu.Unlock()
-	if !kv.rf.CondInstallSnapshot(msg.SnapshotTerm, msg.SnapshotIndex, msg.Snapshot) {
-		return
-	}
-	DPrintf("[%d,%d,%d]: ApplySnapshotMsg: InstallSnapshot", kv.gid, kv.me)
-	kv.ReadSnapShot(msg.Snapshot)
-	kv.RaftlastIncludedIndex = msg.SnapshotIndex
-}
-
-func (kv *ShardKV) ReadSnapShot(data []byte) {
-	if data == nil || len(data) < 1 {
-		DPrintf("[%d,%d,%d]: ReadSnapShot: no snapshot", kv.gid, kv.me)
-		return
-	}
-	var tmpkvDB [shardctrler.NShards]ShardComponent
-	var tmpConfig shardctrler.Config
-	var tmpNeedSend [shardctrler.NShards]bool
-	r := bytes.NewBuffer(data)
-	d := labgob.NewDecoder(r)
-	if d.Decode(&tmpkvDB) != nil ||
-		d.Decode(&tmpNeedSend) != nil ||
-		d.Decode(&tmpConfig) != nil {
-		DPrintf("[%d,%d,%d]: ReadSnapShot: decode error", kv.gid, kv.me)
-		return
-	}
-	kv.kvDB = tmpkvDB
-	kv.config = tmpConfig
-	kv.kvNeedSend = tmpNeedSend
-	DPrintf("[%d,%d,%d]: ReadSnapShot: %v,%v", kv.gid, kv.me, kv.config.Num, kv.kvDB)
-}
-
-func (kv *ShardKV) TryMakeSnapshot(raftIndex int, force bool) {
-	if !force && kv.rf.GetRaftStateSize() < kv.maxraftstate/10*proportion {
-		return
-	}
-	kv.mu.Lock()
-	defer kv.mu.Unlock()
-	w := new(bytes.Buffer)
-	e := labgob.NewEncoder(w)
-	e.Encode(kv.kvDB)
-	e.Encode(kv.kvNeedSend)
-	e.Encode(kv.config)
-	data := w.Bytes()
-	kv.mu.Unlock()
-	kv.rf.Snapshot(raftIndex, data)
-	kv.mu.Lock()
-}
 
 func (kv *ShardKV) ticker() {
 	for !kv.killed() {
@@ -452,36 +373,6 @@ func (kv *ShardKV) ticker() {
 		kv.checkShadeNeedPush()
 		time.Sleep(100 * time.Millisecond)
 	}
-}
-
-func (kv *ShardKV) checkconfig() {
-	kv.mu.Lock()
-	defer kv.mu.Unlock()
-	// for _, shardinfo := range kv.kvDB {
-	// 	if shardinfo.IsMigrateing {
-	// 		return
-	// 	}
-	// }
-	newcfg := kv.mck.Query(kv.config.Num + 1)
-	if newcfg.Num <= kv.config.Num {
-		return
-	}
-	DPrintf("[%d,%d,%d]: checknewconfig: %v", kv.gid, kv.me, kv.config.Num, newcfg)
-	kv.rf.Start(ConfigOp{
-		Config: newcfg,
-	})
-}
-
-func (kv *ShardKV) ApplyConfigOp(op ConfigOp, raftindex int) {
-	kv.mu.Lock()
-	defer kv.mu.Unlock()
-	DPrintf("[%d,%d,%d]: ApplyConfigOp: %v", kv.gid, kv.me, kv.config.Num, op)
-	if op.Config.Num <= kv.config.Num {
-		return
-	}
-	oldcfg := kv.config
-	kv.config = op.Config
-	kv.checkShadeNeedMigrate(oldcfg)
 }
 
 //
@@ -538,10 +429,10 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
 
 	for shard := range kv.kvDB {
 		kv.kvDB[shard] = ShardComponent{
-			ShardIndex:   shard,
-			KVDBofShard:  make(map[string]string),
-			ClientSeq:    make(map[int64]int64),
-			IsMigrateing: false,
+			ShardIndex:  shard,
+			KVDBofShard: make(map[string]string),
+			ClientSeq:   make(map[int64]int64),
+			State:       unvalid,
 		}
 	}
 
@@ -551,7 +442,7 @@ func StartServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persister,
 	if len(snapshot) > 0 {
 		kv.ReadSnapShot(snapshot)
 	}
-	DPrintf("[%d,%d,%d]: Startshardkv", kv.gid, kv.me)
+	DPrintf("[%d,%d,%d]: Startshardkv", kv.gid, kv.me, kv.config.Num)
 
 	return kv
 }
