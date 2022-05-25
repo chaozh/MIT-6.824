@@ -49,5 +49,7 @@ func (kv *ShardKV) TryMakeSnapshot(raftIndex int, force bool) {
 	e.Encode(DBdeepcopy(kv.kvDB))
 	e.Encode(kv.config)
 	data := w.Bytes()
+	kv.mu.Unlock()
 	kv.rf.Snapshot(raftIndex, data)
+	kv.mu.Lock()
 }
