@@ -79,11 +79,8 @@ type ShardKV struct {
 }
 
 type WaitMsg struct {
-	Optype string
-	Err    Err
-	Op     Op
-	Sop    ShardOp
-	Cop    ConfigOp
+	Err Err
+	Op  Op
 }
 
 func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
@@ -240,7 +237,7 @@ func (kv *ShardKV) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 func (kv *ShardKV) Kill() {
 	kv.rf.Kill()
 	atomic.StoreInt32(&kv.dead, 1)
-	DPrintf("[%d,%d,%d]: Kill", kv.gid, kv.me, kv.config.Num)
+	DPrintf("[%d,%d]: Kill", kv.gid, kv.me)
 	// Your code here, if desired.
 }
 

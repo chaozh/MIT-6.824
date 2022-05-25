@@ -138,9 +138,7 @@ func (kv *ShardKV) pushShard(shade ShardComponent) {
 		for i := 0; i < len(servers); i++ {
 			srv := kv.make_end(servers[i])
 			reply := PushShardReply{}
-			kv.mu.Unlock()
-			ok := srv.Call("ShardKV.PushShard", &args, &reply)
-			kv.mu.Lock()
+			ok := srv.Call("ShardKV.PushShard", &args, &reply) //don't unlock
 			if ok && reply.Err == OK {
 				DPrintf("[%d,%d,%d]: pushShard done: %d->%d", kv.gid, kv.me, kv.config.Num, shade.ShardIndex, group)
 				sop := ShardOp{
@@ -148,7 +146,9 @@ func (kv *ShardKV) pushShard(shade ShardComponent) {
 					Shade:     shade,
 					Confignum: kv.config.Num,
 				}
+				kv.mu.Unlock()
 				kv.rf.Start(sop)
+				kv.mu.Lock()
 				return
 			}
 			if ok && reply.Err == ErrConfigOutOfDate {
@@ -198,6 +198,21 @@ func (kv *ShardKV) ApplyShardOp(op ShardOp, raftindex int) {
 		kv.TryMakeSnapshot(raftindex, true)
 	case "GCShard":
 		kv.gcShard(op)
+	case "ValidateShard":
+		kv.validateShard(op)
+	}
+}
+
+func (kv *ShardKV) validateShard(op ShardOp) {
+	kv.mu.Lock()
+	defer kv.mu.Unlock()
+	switch kv.kvDB[op.Shade.ShardIndex].State {
+	case migrating:
+		DPrintf("[%d,%d,%d]: validateShard: %d,%s", kv.gid, kv.me, kv.config.Num, op.Shade.ShardIndex, kv.kvDB[op.Shade.ShardIndex].State)
+		kv.kvDB[op.Shade.ShardIndex].State = valid
+	case invalid:
+		DPrintf("[%d,%d,%d]: validateShard: %d,%s", kv.gid, kv.me, kv.config.Num, op.Shade.ShardIndex, kv.kvDB[op.Shade.ShardIndex].State)
+		kv.kvDB[op.Shade.ShardIndex].State = waitMigrate
 	}
 }
 
@@ -233,7 +248,16 @@ func (kv *ShardKV) checkShadeMigrate(oldcfg shardctrler.Config) {
 				DPrintf("[%d,%d,%d]: checkShadeMigrate: %d,%s", kv.gid, kv.me, kv.config.Num, shard, kv.kvDB[shard].State)
 				kv.kvDB[shard].State = waitMigrate
 			case migrating:
-				DPrintf("[%d,%d,%d]: checkShadeMigrate: %d,%s", kv.gid, kv.me, kv.config.Num, shard, kv.kvDB[shard].State)
+				DPrintf("[%d,%d,%d]: checkShadeMigrate migrating to vaild: %d,%s", kv.gid, kv.me, kv.config.Num, shard, kv.kvDB[shard].State)
+				// sop := ShardOp{
+				// 	Optype: "ValidateShard",
+				// 	Shade: ShardComponent{
+				// 		ShardIndex: shard,
+				// 	},
+				// }
+				// kv.mu.Unlock()
+				// kv.rf.Start(sop)
+				// kv.mu.Lock()
 				kv.kvDB[shard].State = valid
 			}
 		}
