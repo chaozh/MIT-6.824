@@ -225,7 +225,7 @@ func (kv *ShardKV) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 		reply.Err = waitmsg.Err
 		return
 	case <-time.After(time.Duration(500) * time.Millisecond):
-		DPrintf("[%d,%d,%d]: %s Timeout: %s", kv.gid, kv.me, kv.config.Num, args.Op, args.Key, args.Value)
+		DPrintf("[%d,%d,%d]: %s Timeout: %s->'%s'", kv.gid, kv.me, kv.config.Num, args.Op, args.Key, args.Value)
 		reply.Err = ErrWrongLeader
 		return
 	}

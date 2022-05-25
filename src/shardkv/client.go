@@ -77,11 +77,11 @@ func (ck *Clerk) Get(key string) string {
 	args := GetArgs{}
 	args.Key = key
 	args.ClientID = ck.clientId
+	shard := key2shard(key)
+	args.Seq = atomic.AddInt64(&ck.seq[shard], 1)
 
 	for {
-		shard := key2shard(key)
 		gid := ck.config.Shards[shard]
-		args.Seq = atomic.AddInt64(&ck.seq[shard], 1)
 		if servers, ok := ck.config.Groups[gid]; ok {
 			// try each server for the shard.
 			for si := 0; si < len(servers); si++ {
@@ -116,11 +116,11 @@ func (ck *Clerk) PutAppend(key string, value string, op string) {
 	args.Value = value
 	args.Op = op
 	args.ClientID = ck.clientId
+	shard := key2shard(key)
+	args.Seq = atomic.AddInt64(&ck.seq[shard], 1)
 
 	for {
-		shard := key2shard(key)
 		gid := ck.config.Shards[shard]
-		args.Seq = atomic.AddInt64(&ck.seq[shard], 1)
 		if servers, ok := ck.config.Groups[gid]; ok {
 			for si := 0; si < len(servers); si++ {
 				srv := ck.make_end(servers[si])
