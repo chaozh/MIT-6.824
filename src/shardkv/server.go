@@ -13,7 +13,7 @@ import (
 	"6.824/shardctrler"
 )
 
-const Debug = false
+const Debug = true
 
 const proportion = 9
 
