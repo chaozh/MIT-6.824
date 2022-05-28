@@ -1,6 +1,15 @@
 package shardkv
 
 func (kv *ShardKV) checkconfig() {
+	kv.mu.Lock()
+	for _, compoment := range kv.kvDB {
+		if compoment.State != valid && compoment.State != invalid {
+			DPrintf("[%d,%d,%d]: checkconfig no normal: %d,%s", kv.gid, kv.me, kv.config.Num, compoment.ShardIndex, compoment.State)
+			kv.mu.Unlock()
+			return
+		}
+	}
+	kv.mu.Unlock()
 	newcfg := kv.mck.Query(kv.config.Num + 1)
 	kv.mu.Lock()
 	if newcfg.Num <= kv.config.Num {
@@ -23,5 +32,5 @@ func (kv *ShardKV) ApplyConfigOp(op ConfigOp, raftindex int) {
 	}
 	oldcfg := kv.config
 	kv.config = op.Config
-	kv.checkShadeMigrate(oldcfg)
+	kv.checkShardMigrate(oldcfg)
 }

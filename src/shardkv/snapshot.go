@@ -55,6 +55,7 @@ func (kv *ShardKV) TryMakeSnapshot(raftIndex int, force bool) {
 	e.Encode(DBdeepcopy(kv.kvDB))
 	e.Encode(kv.config)
 	data := w.Bytes()
+	DPrintf("[%d,%d,%d]: TryMakeSnapshot: %d,%v", kv.gid, kv.me, kv.config.Num, raftIndex, kv.kvDB)
 	kv.mu.Unlock()
 	kv.rf.Snapshot(raftIndex, data)
 	kv.mu.Lock()

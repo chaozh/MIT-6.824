@@ -50,7 +50,7 @@ type GetReply struct {
 }
 
 type PushShardArgs struct {
-	Shade     ShardComponent
+	Shard     ShardComponent
 	ConfigNum int
 }
 

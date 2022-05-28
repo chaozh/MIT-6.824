@@ -359,7 +359,7 @@ func (kv *ShardKV) ticker() {
 			continue
 		}
 		kv.checkconfig()
-		kv.checkShadeNeedPush()
+		kv.checkShardNeedPush()
 		time.Sleep(100 * time.Millisecond)
 	}
 }
