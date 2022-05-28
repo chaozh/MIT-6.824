@@ -1,13 +1,14 @@
 package shardkv
 
 func (kv *ShardKV) checkconfig() {
-	kv.mu.Lock()
-	defer kv.mu.Unlock()
 	newcfg := kv.mck.Query(kv.config.Num + 1)
+	kv.mu.Lock()
 	if newcfg.Num <= kv.config.Num {
+		kv.mu.Unlock()
 		return
 	}
 	DPrintf("[%d,%d,%d]: checknewconfig: %v", kv.gid, kv.me, kv.config.Num, newcfg)
+	kv.mu.Unlock()
 	kv.rf.Start(ConfigOp{
 		Config: newcfg,
 	})

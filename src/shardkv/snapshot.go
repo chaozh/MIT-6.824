@@ -39,6 +39,12 @@ func (kv *ShardKV) ReadSnapShot(data []byte) {
 }
 
 func (kv *ShardKV) TryMakeSnapshot(raftIndex int, force bool) {
+	kv.mu.Lock()
+	if kv.maxraftstate == -1 {
+		kv.mu.Unlock()
+		return
+	}
+	kv.mu.Unlock()
 	if !force && kv.rf.GetRaftStateSize() < kv.maxraftstate/10*proportion {
 		return
 	}

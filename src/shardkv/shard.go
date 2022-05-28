@@ -1,15 +1,17 @@
 package shardkv
 
 import (
+	"sync/atomic"
 	"time"
 
 	"6.824/shardctrler"
 )
 
 const (
-	PutShard  = "PutShard"
-	PushShard = "PushShard"
-	GCShard   = "GCShard"
+	PutShard      = "PutShard"
+	PushShard     = "PushShard"
+	GCShard       = "GCShard"
+	ValidateShard = "ValidateShard"
 )
 
 const (
@@ -17,6 +19,7 @@ const (
 	valid
 	migrating
 	waitMigrate
+	pushing
 )
 
 type shadestate int
@@ -31,6 +34,8 @@ func (s shadestate) String() string {
 		return "migrating"
 	case waitMigrate:
 		return "waitMigrate"
+	case pushing:
+		return "pushing"
 	}
 	return "unknown"
 }
@@ -45,6 +50,7 @@ type ShardComponent struct {
 type ShardOp struct {
 	Optype    string
 	Shade     ShardComponent
+	Group     int
 	Confignum int
 }
 
@@ -85,7 +91,7 @@ func (kv *ShardKV) PushShard(args *PushShardArgs, reply *PushShardReply) {
 	}
 	//state is waitMigrate
 	sop := ShardOp{
-		Optype:    "PutShard",
+		Optype:    PutShard,
 		Shade:     args.Shade,
 		Confignum: args.ConfigNum,
 	}
@@ -117,20 +123,26 @@ func (kv *ShardKV) PushShard(args *PushShardArgs, reply *PushShardReply) {
 	}
 }
 
-func (kv *ShardKV) pushShard(shade ShardComponent) {
+func (kv *ShardKV) pushShard(shadeindex int, group int) {
 	kv.mu.Lock()
 	if _, isleader := kv.rf.GetState(); !isleader {
 		kv.mu.Unlock()
 		return
 	}
+	atomic.AddInt64(&kv.pushingshard, 1)
+	defer func() {
+		kv.mu.Lock()
+		atomic.AddInt64(&kv.pushingshard, -1)
+		kv.mu.Unlock()
+	}()
+	shade := kv.kvDB[shadeindex]
 	DPrintf("[%d,%d,%d]: pushShard: %d", kv.gid, kv.me, kv.config.Num, shade.ShardIndex)
-
 	args := PushShardArgs{
 		Shade:     shade,
 		ConfigNum: kv.config.Num,
 	}
-	group := kv.config.Shards[shade.ShardIndex]
 	if group == kv.gid {
+		DPrintf("[%d,%d,%d]: pushShard same group: %d,pushing:%d", kv.gid, kv.me, kv.config.Num, shade.ShardIndex, kv.pushingshard)
 		kv.mu.Unlock()
 		return
 	}
@@ -183,12 +195,13 @@ func (kv *ShardKV) ApplyShardOp(op ShardOp, raftindex int) {
 	// makesnapshot := false
 
 	switch op.Optype {
-	case "PutShard":
+	case PutShard:
 		kv.mu.Lock()
 		DPrintf("[%d,%d,%d]: ApplyShardOp: %d,raftIndex:%d", kv.gid, kv.me, kv.config.Num, op.Shade.ShardIndex, raftindex)
 		if kv.kvDB[op.Shade.ShardIndex].State != waitMigrate {
 			DPrintf("[%d,%d,%d]: ApplyShardOp shade not wait migrate: %d,%s", kv.gid, kv.me, kv.config.Num, op.Shade.ShardIndex, kv.kvDB[op.Shade.ShardIndex].State)
 			err = ErrWrongLeader
+			kv.mu.Unlock()
 			break
 		}
 		kv.kvDB[op.Shade.ShardIndex] = op.Shade
@@ -197,14 +210,16 @@ func (kv *ShardKV) ApplyShardOp(op ShardOp, raftindex int) {
 		} else {
 			kv.kvDB[op.Shade.ShardIndex].State = valid
 		}
-		DPrintf("[%d,%d,%d]: ApplyShardOp done: %d,raftIndex:%d,shade:%d", kv.gid, kv.me, kv.config.Num, op.Shade.ShardIndex, raftindex, op.Shade.ShardIndex)
+		DPrintf("[%d,%d,%d]: ApplyShardOp done: %d,raftIndex:%d,shade:%v", kv.gid, kv.me, kv.config.Num, op.Shade.ShardIndex, raftindex, op.Shade)
 		err = OK
 		kv.mu.Unlock()
 		// makesnapshot = true
-	case "GCShard":
+	case GCShard:
 		kv.gcShard(op)
-	case "ValidateShard":
+	case ValidateShard:
 		kv.validateShard(op)
+	case PushShard:
+		kv.pushShard(op.Shade.ShardIndex, op.Group)
 	}
 }
 
@@ -254,6 +269,10 @@ func (kv *ShardKV) checkShadeMigrate(oldcfg shardctrler.Config) {
 				kv.kvDB[shard].State = waitMigrate
 			case migrating:
 				DPrintf("[%d,%d,%d]: checkShadeMigrate migrating to vaild: %d,%s", kv.gid, kv.me, kv.config.Num, shard, kv.kvDB[shard].State)
+				if atomic.LoadInt64(&kv.pushingshard) != 0 {
+					DPrintf("[%d,%d,%d]: checkShadeMigrate is pushing: %d,%s,pushingshard:%d", kv.gid, kv.me, kv.config.Num, shard, kv.kvDB[shard].State, atomic.LoadInt64(&kv.pushingshard))
+					continue
+				}
 				sop := ShardOp{
 					Optype: "ValidateShard",
 					Shade: ShardComponent{
@@ -265,6 +284,7 @@ func (kv *ShardKV) checkShadeMigrate(oldcfg shardctrler.Config) {
 				kv.mu.Lock()
 				// kv.kvDB[shard].State = valid
 			}
+			continue
 		}
 		if oldcfg.Shards[shard] == kv.gid {
 			switch kv.kvDB[shard].State {
@@ -287,6 +307,15 @@ func (kv *ShardKV) checkShadeNeedPush() {
 			continue
 		}
 		DPrintf("[%d,%d,%d]: checkShadeNeedPush: %d->%d", kv.gid, kv.me, kv.config.Num, index, kv.config.Shards[index])
-		go kv.pushShard(compoment)
+		sop := ShardOp{
+			Optype: "PushShard",
+			Shade: ShardComponent{
+				ShardIndex: index,
+			},
+			Group: kv.config.Shards[index],
+		}
+		kv.mu.Unlock()
+		kv.rf.Start(sop)
+		kv.mu.Lock()
 	}
 }

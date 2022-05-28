@@ -3,7 +3,6 @@ package shardkv
 import (
 	"log"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"6.824/labrpc"
 	"6.824/raft"
 	"6.824/shardctrler"
+	"github.com/sasha-s/go-deadlock"
 )
 
 const Debug = true
@@ -59,7 +59,7 @@ const (
 )
 
 type ShardKV struct {
-	mu                    sync.Mutex
+	mu                    deadlock.Mutex
 	me                    int
 	rf                    *raft.Raft
 	applyCh               chan raft.ApplyMsg
@@ -76,6 +76,8 @@ type ShardKV struct {
 	kvDB [shardctrler.NShards]ShardComponent
 
 	WaitMap map[int]chan WaitMsg //key:index in raft, value:channel
+
+	pushingshard int64
 }
 
 type WaitMsg struct {
@@ -153,7 +155,6 @@ func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
 		}
 		return
 	case <-time.After(time.Duration(500) * time.Millisecond):
-		DPrintf("[%d,%d,%d]: Get Timeout: %s", kv.gid, kv.me, kv.config.Num, args.Key)
 		reply.Err = ErrWrongLeader
 		return
 	}
@@ -205,7 +206,6 @@ func (kv *ShardKV) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 		kv.WaitMap[index] = make(chan WaitMsg, 1)
 		chForIndex = kv.WaitMap[index]
 	}
-	kv.mu.Unlock()
 	defer func() {
 		kv.mu.Lock()
 		delete(kv.WaitMap, index)
@@ -213,6 +213,7 @@ func (kv *ShardKV) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 	}()
 
 	DPrintf("[%d,%d,%d]: PutAppend wait: %s: %s->'%s'", kv.gid, kv.me, kv.config.Num, args.Op, args.Key, args.Value)
+	kv.mu.Unlock()
 	select {
 	case waitmsg := <-chForIndex:
 		if waitmsg.Op.Key != args.Key || waitmsg.Op.ClientID != args.ClientID || waitmsg.Op.Seq != args.Seq {
@@ -222,7 +223,6 @@ func (kv *ShardKV) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 		reply.Err = waitmsg.Err
 		return
 	case <-time.After(time.Duration(500) * time.Millisecond):
-		DPrintf("[%d,%d,%d]: %s Timeout: %s->'%s'", kv.gid, kv.me, kv.config.Num, args.Op, args.Key, args.Value)
 		reply.Err = ErrWrongLeader
 		return
 	}
@@ -259,6 +259,7 @@ func (kv *ShardKV) applier() {
 
 func (kv *ShardKV) ApplyCommandMsg(msg raft.ApplyMsg) {
 	if msg.CommandIndex <= kv.RaftlastIncludedIndex {
+		DPrintf("[%d,%d,%d]: ApplyCommandMsg less than RaftlastIncludedIndex: %d->%d,%v", kv.gid, kv.me, kv.config.Num, kv.RaftlastIncludedIndex, msg.CommandIndex, msg.Command)
 		return
 	}
 	switch msg.Command.(type) {
@@ -272,9 +273,7 @@ func (kv *ShardKV) ApplyCommandMsg(msg raft.ApplyMsg) {
 		sop := msg.Command.(ShardOp)
 		kv.ApplyShardOp(sop, msg.CommandIndex)
 	}
-	if kv.maxraftstate != -1 {
-		kv.TryMakeSnapshot(msg.CommandIndex, false)
-	}
+	kv.TryMakeSnapshot(msg.CommandIndex, false)
 }
 
 func (kv *ShardKV) ApplyDBOp(op Op, raftindex int) {
@@ -284,20 +283,10 @@ func (kv *ShardKV) ApplyDBOp(op Op, raftindex int) {
 		err      Err
 	)
 
-	defer func() {
-		kv.mu.Lock()
-		defer kv.mu.Unlock()
-		ch, channelexist := kv.WaitMap[raftindex]
-		if channelexist {
-			DPrintf("[%d,%d,%d]: ApplyCommandMsg: %s: %s->'%s', %s'", kv.gid, kv.me, kv.config.Num, op.OpType, op.Key, value, err)
-			DPrintf("[%d,%d,%d]: Applier send: %s->'%s'", kv.gid, kv.me, kv.config.Num, op.Key, value)
-			ch <- WaitMsg{Err: err, Op: op}
-		}
-	}()
-
 	shard := key2shard(op.Key)
 
 	kv.mu.Lock()
+	defer kv.mu.Unlock()
 	switch op.OpType {
 	case "Get":
 		{
@@ -316,9 +305,11 @@ func (kv *ShardKV) ApplyDBOp(op Op, raftindex int) {
 			err = OK
 			break
 		}
+		DPrintf("[%d,%d,%d]: ApplyCommandMsg Do %s: %s->'%s'", kv.gid, kv.me, kv.config.Num, op.OpType, op.Key, op.Value)
 		if kv.config.Shards[shard] != kv.gid ||
 			kv.kvDB[shard].State == invalid ||
 			kv.kvDB[shard].State == migrating {
+			DPrintf("[%d,%d,%d]: ApplyCommandMsg Wrong State of shard: %s,%s", kv.gid, kv.me, kv.config.Num, op.Key, kv.kvDB[shard].State)
 			err = ErrWrongGroup
 			break
 		}
@@ -330,7 +321,13 @@ func (kv *ShardKV) ApplyDBOp(op Op, raftindex int) {
 		err = OK
 		kv.kvDB[shard].ClientSeq[op.ClientID] = Max(kv.kvDB[shard].ClientSeq[op.ClientID], op.Seq)
 	}
-	kv.mu.Unlock()
+
+	ch, channelexist := kv.WaitMap[raftindex]
+	if channelexist {
+		DPrintf("[%d,%d,%d]: ApplyCommandMsg: %s: %s->'%s', %s'", kv.gid, kv.me, kv.config.Num, op.OpType, op.Key, value, err)
+		DPrintf("[%d,%d,%d]: Applier send: %s->'%s'", kv.gid, kv.me, kv.config.Num, op.Key, value)
+		ch <- WaitMsg{Err: err, Op: op}
+	}
 }
 
 func (kv *ShardKV) putAppend(op Op, shard int) string {
@@ -339,15 +336,15 @@ func (kv *ShardKV) putAppend(op Op, shard int) string {
 	}
 	switch op.OpType {
 	case "Put":
-		DPrintf("[%d,%d,%d]: putAppend Put: %s->%s", kv.gid, kv.me, kv.config.Num, op.Key, op.Value)
 		kv.kvDB[shard].KVDBofShard[op.Key] = op.Value
+		DPrintf("[%d,%d,%d]: putAppend Put: %s->%s", kv.gid, kv.me, kv.config.Num, op.Key, kv.kvDB[shard].KVDBofShard[op.Key])
 		return kv.kvDB[shard].KVDBofShard[op.Key]
 	case "Append":
-		DPrintf("[%d,%d,%d]: putAppend Append: %s->%s", kv.gid, kv.me, kv.config.Num, op.Key, op.Value)
 		if _, exist := kv.kvDB[shard].KVDBofShard[op.Key]; !exist {
 			kv.kvDB[shard].KVDBofShard[op.Key] = ""
 		}
 		kv.kvDB[shard].KVDBofShard[op.Key] = strings.Join([]string{kv.kvDB[shard].KVDBofShard[op.Key], op.Value}, "")
+		DPrintf("[%d,%d,%d]: putAppend Append: %s->%s", kv.gid, kv.me, kv.config.Num, op.Key, kv.kvDB[shard].KVDBofShard[op.Key])
 		return kv.kvDB[shard].KVDBofShard[op.Key]
 	}
 	return ""
