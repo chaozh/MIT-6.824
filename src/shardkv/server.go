@@ -98,20 +98,6 @@ func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) {
 	}
 
 	shard := key2shard(args.Key)
-	if kv.config.Shards[shard] != kv.gid ||
-		kv.kvDB[shard].State == invalid ||
-		kv.kvDB[shard].State == migrating {
-		DPrintf("[%d,%d,%d]: Get Wrong Group: %s,shade:%d", kv.gid, kv.me, kv.config.Num, args.Key, shard)
-		reply.Err = ErrWrongGroup
-		kv.mu.Unlock()
-		return
-	}
-	if kv.kvDB[shard].State == waitMigrate {
-		DPrintf("[%d,%d,%d]: Get Shard no ready: %s,shade:%d", kv.gid, kv.me, kv.config.Num, args.Key, shard)
-		reply.Err = ErrWrongLeader
-		kv.mu.Unlock()
-		return
-	}
 	// state == vaild
 
 	op := Op{
@@ -167,21 +153,6 @@ func (kv *ShardKV) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 	_, ifLeader := kv.rf.GetState()
 	if !ifLeader {
 		DPrintf("[%d,%d,%d]: PutAppend Wrong Leader: %s", kv.gid, kv.me, kv.config.Num, args.Key)
-		reply.Err = ErrWrongLeader
-		kv.mu.Unlock()
-		return
-	}
-	shard := key2shard(args.Key)
-	if kv.config.Shards[shard] != kv.gid ||
-		kv.kvDB[shard].State == invalid ||
-		kv.kvDB[shard].State == migrating {
-		DPrintf("[%d,%d,%d]: PutAppend Wrong Group: %s", kv.gid, kv.me, kv.config.Num, args.Key)
-		reply.Err = ErrWrongGroup
-		kv.mu.Unlock()
-		return
-	}
-	if kv.kvDB[shard].State == waitMigrate {
-		DPrintf("[%d,%d,%d]: Get Shard no ready: %s", kv.gid, kv.me, kv.config.Num, args.Key)
 		reply.Err = ErrWrongLeader
 		kv.mu.Unlock()
 		return
@@ -284,9 +255,31 @@ func (kv *ShardKV) ApplyDBOp(op Op, raftindex int) {
 	)
 
 	shard := key2shard(op.Key)
+	defer func() {
+		kv.mu.Lock()
+		ch, channelexist := kv.WaitMap[raftindex]
+		if channelexist {
+			DPrintf("[%d,%d,%d]: ApplyCommandMsg: %s: %s->'%s', %s'", kv.gid, kv.me, kv.config.Num, op.OpType, op.Key, value, err)
+			DPrintf("[%d,%d,%d]: Applier send: %s->'%s'", kv.gid, kv.me, kv.config.Num, op.Key, value)
+			ch <- WaitMsg{Err: err, Op: op}
+		}
+		kv.mu.Unlock()
+	}()
 
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
+	if kv.config.Shards[shard] != kv.gid ||
+		kv.kvDB[shard].State == invalid ||
+		kv.kvDB[shard].State == migrating {
+		DPrintf("[%d,%d,%d]: Get Wrong Group: %s,shade:%d", kv.gid, kv.me, kv.config.Num, op.Key, shard)
+		err = ErrWrongGroup
+		return
+	}
+	if kv.kvDB[shard].State == waitMigrate {
+		DPrintf("[%d,%d,%d]: Get Shard no ready: %s,shade:%d", kv.gid, kv.me, kv.config.Num, op.Key, shard)
+		err = ErrWrongLeader
+		return
+	}
 	switch op.OpType {
 	case "Get":
 		{
@@ -320,13 +313,6 @@ func (kv *ShardKV) ApplyDBOp(op Op, raftindex int) {
 		value = kv.putAppend(op, shard)
 		err = OK
 		kv.kvDB[shard].ClientSeq[op.ClientID] = Max(kv.kvDB[shard].ClientSeq[op.ClientID], op.Seq)
-	}
-
-	ch, channelexist := kv.WaitMap[raftindex]
-	if channelexist {
-		DPrintf("[%d,%d,%d]: ApplyCommandMsg: %s: %s->'%s', %s'", kv.gid, kv.me, kv.config.Num, op.OpType, op.Key, value, err)
-		DPrintf("[%d,%d,%d]: Applier send: %s->'%s'", kv.gid, kv.me, kv.config.Num, op.Key, value)
-		ch <- WaitMsg{Err: err, Op: op}
 	}
 }
 

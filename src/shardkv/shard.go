@@ -64,26 +64,6 @@ func (kv *ShardKV) PushShard(args *PushShardArgs, reply *PushShardReply) {
 		kv.mu.Unlock()
 		return
 	}
-	// if kv.config.Num < args.ConfigNum {
-	// 	DPrintf("[%d,%d,%d]: PutShard Wrong Config: %d", kv.gid, kv.me, kv.config.Num, args.Shard.ShardIndex)
-	// 	reply.Err = ErrWrongLeader
-	// 	kv.mu.Unlock()
-	// 	return
-	// }
-	// if kv.config.Shards[args.Shard.ShardIndex] != kv.gid || kv.kvDB[args.Shard.ShardIndex].State == invalid {
-	// 	DPrintf("[%d,%d,%d]: PutShard Wrong Shard: %d", kv.gid, kv.me, kv.config.Num, args.Shard.ShardIndex)
-	// 	reply.Err = ErrWrongGroup
-	// 	kv.mu.Unlock()
-	// 	return
-	// }
-	if kv.kvDB[args.Shard.ShardIndex].State == migrating ||
-		kv.kvDB[args.Shard.ShardIndex].State == valid {
-		DPrintf("[%d,%d,%d]: PutShard Already Migrate: %d", kv.gid, kv.me, kv.config.Num, args.Shard.ShardIndex)
-		reply.Err = OK
-		kv.mu.Unlock()
-		return
-	}
-	//state is waitMigrate
 	sop := ShardOp{
 		Optype:    PutShard,
 		Shard:     args.Shard,
@@ -210,7 +190,7 @@ func (kv *ShardKV) ApplyShardOp(op ShardOp, raftindex int) {
 				DPrintf("[%d,%d,%d]: ApplyShardOp Out of Date Config: %d", kv.gid, kv.me, kv.config.Num, op.Shard.ShardIndex)
 				err = OK
 				kv.mu.Unlock()
-				return
+				break
 			}
 			DPrintf("[%d,%d,%d]: ApplyShardOp Shard not wait migrate: %d,%s", kv.gid, kv.me, kv.config.Num, op.Shard.ShardIndex, kv.kvDB[op.Shard.ShardIndex].State)
 			err = ErrWrongLeader

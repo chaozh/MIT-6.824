@@ -171,12 +171,11 @@ func (rf *Raft) CondInstallSnapshot(lastIncludedTerm int, lastIncludedIndex int,
 	}
 	DPrintf("[%d]: CondInstallSnapshot done: %d, %d", rf.me, rf.logs.GetLastIndex(), rf.commitIndex)
 
-	defer func() {
-		rf.logs.Index0 = lastIncludedIndex
-		rf.snapshot = snapshot
-		rf.commitIndex = lastIncludedIndex
-		rf.lastApplied = lastIncludedIndex
-	}()
+	rf.logs.Index0 = lastIncludedIndex
+	rf.snapshot = snapshot
+	rf.commitIndex = lastIncludedIndex
+	rf.lastApplied = lastIncludedIndex
+
 	rf.persistStateAndSnapshot(snapshot)
 
 	return true
