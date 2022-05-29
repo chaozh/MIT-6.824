@@ -13,7 +13,7 @@ import (
 	"github.com/sasha-s/go-deadlock"
 )
 
-const Debug = true
+const Debug = false
 
 const proportion = 9
 

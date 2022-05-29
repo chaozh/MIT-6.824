@@ -208,6 +208,7 @@ func (kv *ShardKV) ApplyShardOp(op ShardOp, raftindex int) {
 		kv.mu.Unlock()
 	case GCShard:
 		kv.gcShard(op)
+		kv.TryMakeSnapshot(raftindex, true)
 	case ValidateShard:
 		kv.validateShard(op)
 	case PushShard:
