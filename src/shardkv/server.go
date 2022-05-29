@@ -3,6 +3,7 @@ package shardkv
 import (
 	"log"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -10,7 +11,6 @@ import (
 	"6.824/labrpc"
 	"6.824/raft"
 	"6.824/shardctrler"
-	"github.com/sasha-s/go-deadlock"
 )
 
 const Debug = false
@@ -59,7 +59,7 @@ const (
 )
 
 type ShardKV struct {
-	mu                    deadlock.Mutex
+	mu                    sync.Mutex
 	me                    int
 	rf                    *raft.Raft
 	applyCh               chan raft.ApplyMsg
