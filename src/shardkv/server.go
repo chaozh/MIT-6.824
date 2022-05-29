@@ -15,7 +15,7 @@ import (
 
 const Debug = false
 
-const proportion = 9
+const proportion = 8
 
 func DPrintf(format string, a ...interface{}) (n int, err error) {
 	str := strings.Join([]string{"[shardkv]:", format}, "")

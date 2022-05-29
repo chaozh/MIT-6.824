@@ -207,7 +207,6 @@ func (kv *ShardKV) ApplyShardOp(op ShardOp, raftindex int) {
 	case PushShard:
 		kv.pushShard(op)
 	}
-	kv.TryMakeSnapshot(raftindex, true)
 }
 
 func (kv *ShardKV) gcShard(op ShardOp) {
