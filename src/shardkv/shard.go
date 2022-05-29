@@ -139,7 +139,7 @@ func (kv *ShardKV) pushShard(op ShardOp) {
 			srv := kv.make_end(servers[i])
 			reply := PushShardReply{}
 			kv.mu.Unlock()
-			ok := srv.Call("ShardKV.PushShard", &args, &reply) //don't unlock
+			ok := srv.Call("ShardKV.PushShard", &args, &reply)
 			kv.mu.Lock()
 			if ok && reply.Err == OK {
 				DPrintf("[%d,%d,%d]: pushShard done: %d->%d", kv.gid, kv.me, kv.config.Num, Shard.ShardIndex, group)
@@ -259,17 +259,11 @@ func (kv *ShardKV) checkShardMigrate(oldcfg shardctrler.Config) {
 			case invalid:
 				DPrintf("[%d,%d,%d]: checkShardMigrate: %d,%s", kv.gid, kv.me, kv.config.Num, shard, kv.kvDB[shard].State)
 				kv.kvDB[shard].State = waitMigrate
-				// case migrating:
-				// 	DPrintf("[%d,%d,%d]: checkShardMigrate migrating to vaild: %d,%s", kv.gid, kv.me, kv.config.Num, shard, kv.kvDB[shard].State)
-				// 	kv.kvDB[shard].State = valid
 			}
 			continue
 		}
 		if oldcfg.Shards[shard] == kv.gid {
 			switch kv.kvDB[shard].State {
-			// case waitMigrate:
-			// 	DPrintf("[%d,%d,%d]: checkShardMigrate: %d,%s", kv.gid, kv.me, kv.config.Num, shard, kv.kvDB[shard].State)
-			// 	kv.kvDB[shard].State = invalid
 			case valid:
 				DPrintf("[%d,%d,%d]: checkShardMigrate: %d,%s", kv.gid, kv.me, kv.config.Num, shard, kv.kvDB[shard].State)
 				kv.kvDB[shard].State = migrating
@@ -294,9 +288,6 @@ func (kv *ShardKV) checkShardNeedPush() {
 			Group:     kv.config.Shards[index],
 			Confignum: kv.config.Num,
 		}
-		// kv.mu.Unlock()
-		// ridx, _, _ := kv.rf.Start(sop)
-		// kv.mu.Lock()
 		go kv.pushShard(sop)
 	}
 }
