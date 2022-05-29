@@ -8,10 +8,9 @@ import (
 )
 
 const (
-	PutShard      = "PutShard"
-	PushShard     = "PushShard"
-	GCShard       = "GCShard"
-	ValidateShard = "ValidateShard"
+	PutShard  = "PutShard"
+	PushShard = "PushShard"
+	GCShard   = "GCShard"
 )
 
 const (
@@ -19,7 +18,6 @@ const (
 	valid
 	migrating
 	waitMigrate
-	pushing
 )
 
 type Shardstate int
@@ -34,8 +32,6 @@ func (s Shardstate) String() string {
 		return "migrating"
 	case waitMigrate:
 		return "waitMigrate"
-	case pushing:
-		return "pushing"
 	}
 	return "unknown"
 }
@@ -208,25 +204,10 @@ func (kv *ShardKV) ApplyShardOp(op ShardOp, raftindex int) {
 		kv.mu.Unlock()
 	case GCShard:
 		kv.gcShard(op)
-		kv.TryMakeSnapshot(raftindex, true)
-	case ValidateShard:
-		kv.validateShard(op)
 	case PushShard:
 		kv.pushShard(op)
 	}
-}
-
-func (kv *ShardKV) validateShard(op ShardOp) {
-	kv.mu.Lock()
-	defer kv.mu.Unlock()
-	switch kv.kvDB[op.Shard.ShardIndex].State {
-	case migrating:
-		DPrintf("[%d,%d,%d]: validateShard: %d,%s", kv.gid, kv.me, kv.config.Num, op.Shard.ShardIndex, kv.kvDB[op.Shard.ShardIndex].State)
-		kv.kvDB[op.Shard.ShardIndex].State = valid
-	case invalid:
-		DPrintf("[%d,%d,%d]: validateShard: %d,%s", kv.gid, kv.me, kv.config.Num, op.Shard.ShardIndex, kv.kvDB[op.Shard.ShardIndex].State)
-		kv.kvDB[op.Shard.ShardIndex].State = waitMigrate
-	}
+	kv.TryMakeSnapshot(raftindex, true)
 }
 
 func (kv *ShardKV) gcShard(op ShardOp) {
