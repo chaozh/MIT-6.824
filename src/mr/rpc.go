@@ -14,6 +14,32 @@ import "strconv"
 // and reply for an RPC.
 //
 
+const (
+	TaskTypeMap     = "map"
+	TaskTypeReduce  = "reduce"
+	TaskTypeExpired = "expired"
+)
+
+type GetTaskRequest struct {
+}
+
+type GetTaskResponse struct {
+	AllocatedTask *Task  `json:"allocated_task"`
+	TaskKey       string `json:"task_key"`
+	Allocated     bool   `json:"allocated"`
+	NReducer      int    `json:"n_reducer"`
+}
+
+type SubmitTaskRequest struct {
+	TaskToSubmit *Task  `json:"task_to_submit"`
+	TaskKey      string `json:"task_key"`
+	TaskType     string `json:"task_type"`
+}
+
+type SubmitTaskResponse struct {
+	Success bool `json:"success"`
+}
+
 type ExampleArgs struct {
 	X int
 }
@@ -23,7 +49,6 @@ type ExampleReply struct {
 }
 
 // Add your RPC definitions here.
-
 
 // Cook up a unique-ish UNIX-domain socket name
 // in /var/tmp, for the coordinator.
